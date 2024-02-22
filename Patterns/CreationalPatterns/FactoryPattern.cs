@@ -8,7 +8,7 @@ namespace SimpleU.Pattern.Factory
     //if/else or switch/case required
     public class ExampleUsage
     {
-        private Creator creator;
+        private Factory creator;
 
         public void Run()
         {
@@ -16,11 +16,11 @@ namespace SimpleU.Pattern.Factory
 
             if (input.Equals("A")) //case for A
             {
-                creator = new ConcreteCreatorA();
+                creator = new ConcreteFactoryA();
             }
             else if (input.Equals("B")) //case for B
             {
-                creator = new ConcreteCreatorB();
+                creator = new ConcreteFactoryB();
             }
             else
             {
@@ -32,7 +32,7 @@ namespace SimpleU.Pattern.Factory
     /// <summary>
     /// Base class for creators
     /// </summary>
-    public abstract class Creator
+    public abstract class Factory
     {
         public void Stuff()
         {
@@ -43,7 +43,7 @@ namespace SimpleU.Pattern.Factory
         public abstract IProduct CreateProduct();
     }
 
-    public class ConcreteCreatorA : Creator
+    public class ConcreteFactoryA : Factory
     {
         public override IProduct CreateProduct()
         {
@@ -51,7 +51,7 @@ namespace SimpleU.Pattern.Factory
         }
     }
 
-    public class ConcreteCreatorB : Creator
+    public class ConcreteFactoryB : Factory
     {
         public override IProduct CreateProduct()
         {
