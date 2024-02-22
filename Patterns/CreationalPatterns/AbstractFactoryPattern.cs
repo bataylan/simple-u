@@ -2,6 +2,11 @@
 
 namespace SimpleU.Pattern.AbstractFactory
 {
+    //Creational Pattern
+    //factories for variations
+    //every product has interface
+    //every variation has class
+    //good for static products, but dynamic variations
     public class ExampleUsage
     {
         private IAbstractFactory abstractFactory;
