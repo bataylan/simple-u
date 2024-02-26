@@ -57,7 +57,6 @@ namespace SimpleU.Pattern.Singleton
         {
             if (Instance != null && Instance != this)
             {
-                Debug.Log("GameContext already exist!");
                 Destroy(this);
                 return;
             }
