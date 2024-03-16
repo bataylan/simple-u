@@ -102,7 +102,7 @@ namespace SimpleU.TWOD.Collider
             if (_itemList.Contains(item))
                 return;
 
-            item.deathSender.RegisterOnDeath(RemoveItem);
+            item.DeathSender.RegisterOnDeath(RemoveItem);
 
             if (_itemList.Count <= 0 && onFirstItemEntered != null)
                 onFirstItemEntered.Invoke(item);
@@ -121,7 +121,7 @@ namespace SimpleU.TWOD.Collider
             if (!_itemList.Contains(item))
                 return;
 
-            item.deathSender.UnRegisterOnDeath(RemoveItem);
+            item.DeathSender.UnRegisterOnDeath(RemoveItem);
 
             _itemList.Remove(item);
 
@@ -139,7 +139,7 @@ namespace SimpleU.TWOD.Collider
 
             for (int i = 0; i < _itemList.Count; i++)
             {
-                _itemList[i].deathSender.UnRegisterOnDeath(RemoveItem);
+                _itemList[i].DeathSender.UnRegisterOnDeath(RemoveItem);
             }
 
             _itemList = null;
@@ -168,9 +168,8 @@ namespace SimpleU.TWOD.Collider
 
     public interface ITrackDeathOwner<T> where T : MonoBehaviour
     {
-        DeathSender<T> deathSender { get; }
-        void RegisterOnDeath(Action<T> target);
-        void UnRegisterOnDeath(Action<T> target);
+        DeathSender<T> DeathSender { get; }
+        public void OnDeath();
     }
 
     public class DeathSender<T> where T : MonoBehaviour
