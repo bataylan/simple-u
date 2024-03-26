@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using SimpleU.Extensions.Colliders;
 using UnityEngine;
 
 namespace SimpleU.TWOD.Collider
@@ -61,17 +62,10 @@ namespace SimpleU.TWOD.Collider
             if (!other.gameObject.CompareTag(targetTag))
                 return;
 
-            var item = other.gameObject.GetComponent<T>();
-            if (item == null)
-            {
-                var colRef = other.gameObject.GetComponent<ColliderReference>();
-                if (colRef == null)
-                    return;
+            var item = other.GetComponentExtended<T>();
+            if (item == default(T))
+                return;
 
-                item = colRef.GetComponentSafe<T>();
-                if (item == default(T))
-                    return;
-            }
             AddItem(item);
         }
 
@@ -200,24 +194,6 @@ namespace SimpleU.TWOD.Collider
         public void Reset()
         {
             _onDeath = null;
-        }
-    }
-
-    public class ColliderReference : MonoBehaviour
-    {
-        private Transform _refTr;
-
-        public void Init(Transform refTr)
-        {
-            _refTr = refTr;
-        }
-
-        public T GetComponentSafe<T>()
-        {
-            if (!_refTr)
-                return default(T);
-
-            return _refTr.GetComponent<T>();
         }
     }
 }
