@@ -40,11 +40,21 @@ namespace SimpleU.TWOD.Collider
         public Action<T> handleTriggerExit;
         public Action<T> onFirstItemEntered;
         public Action<T> onLastItemLeft;
+        public Func<T, bool> enterCondition;
         public string targetTag;
 
         public List<T> ItemList => _itemList;
         private List<T> _itemList = new List<T>();
         private TriggerEnhancedHandler _triggerHandler;
+
+        public bool Enabled
+        {
+            get { return _triggerHandler.enabled; }
+            set
+            {
+                _triggerHandler.enabled = value;
+            }
+        }
 
         public TriggerEnhancedHandler(TriggerEnhancedHandler triggerHandler, string targetTag)
         {
@@ -96,6 +106,9 @@ namespace SimpleU.TWOD.Collider
             if (_itemList.Contains(item))
                 return;
 
+            if (enterCondition != null && !enterCondition.Invoke(item))
+                return;
+
             item.DeathSender.RegisterOnDeath(RemoveItem);
 
             if (_itemList.Count <= 0 && onFirstItemEntered != null)
@@ -139,10 +152,10 @@ namespace SimpleU.TWOD.Collider
             _itemList = null;
         }
 
-        public void Disable()
-        {
-            _triggerHandler.enabled = false;
-        }
+        // public void Disable()
+        // {
+        //     _triggerHandler.enabled = false;
+        // }
 
         public void ResetActions()
         {
