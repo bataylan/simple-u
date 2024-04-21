@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace SimpleU.Context
 {
@@ -15,13 +17,22 @@ namespace SimpleU.Context
                     return _instance;
 
                 var gameObject = new GameObject();
-
                 var levelContext = gameObject.AddComponent<LevelContext>();
+
                 Instance = levelContext;
                 return _instance;
             }
-            set
+            private set
             {
+                if (value == null)
+                {
+                    if (_instance)
+                        Destroy(_instance.gameObject);
+
+                    _instance = null;
+                    return;
+                }
+
                 if (_instance != null)
                 {
                     if (_instance == value)
@@ -31,13 +42,13 @@ namespace SimpleU.Context
                     else
                     {
                         Debug.Log("LevelContext already exist!");
-                        Destroy(value);
+                        Destroy(_instance.gameObject);
                         return;
                     }
                 }
 
                 value.gameObject.name = nameof(LevelContext);
-                Debug.Log("GameContext registered!");
+                Debug.Log("LevelContext registered!");
             }
         }
 
@@ -46,15 +57,14 @@ namespace SimpleU.Context
 
         void Awake()
         {
-            Debug.Log("LevelContext Awake");
-            if (Instance != null && Instance != this)
-            {
-                Debug.Log("LevelContext already exist!");
-                Destroy(this);
-                return;
-            }
+            Instance = this;
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
+        }
 
-            _instance = this;
+        private void OnSceneUnloaded(Scene scene)
+        {
+            Instance = null;
+
         }
 
         void OnEnable()

@@ -17,12 +17,12 @@ namespace SimpleU.Context
                     return _instance;
 
                 var gameObject = new GameObject();
-
                 var gameContext = gameObject.AddComponent<GameContext>();
+
                 Instance = gameContext;
                 return _instance;
             }
-            set
+            private set
             {
                 if (_instance != null)
                 {
