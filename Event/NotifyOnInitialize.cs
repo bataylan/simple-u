@@ -4,10 +4,9 @@ using UnityEngine.Events;
 
 namespace SimpleU.Event
 {
-    [Serializable]
     public struct NotifyOnInitialize<T>
     {
-        [SerializeField] private UnityEvent<T> @event;
+        private UnityEvent<T> @event;
 
         private bool Initialized => _initializer != null;
         private T _initializer;
@@ -35,6 +34,9 @@ namespace SimpleU.Event
             if (Initialized)
                 action.Invoke(_initializer);
 
+            if(@event == null)
+                @event = new UnityEvent<T>();
+                
             @event.AddListener(action);
         }
     }
