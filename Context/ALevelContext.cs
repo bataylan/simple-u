@@ -61,6 +61,18 @@ namespace SimpleU.Context
         }
         private static T _instance;
 
+        public ContextDictionary ExtraData
+        {
+            get
+            {
+                if (_extraData == null)
+                    _extraData = new ContextDictionary();
+
+                return _extraData;
+            }
+        }
+        private ContextDictionary _extraData;
+
         public LevelStatus Status
         {
             get
@@ -80,7 +92,7 @@ namespace SimpleU.Context
 
         public UnityEvent<LevelStatus> onStatusChange;
 
-        void Awake()
+        protected virtual void Awake()
         {
             Instance = this as T;
             SceneManager.sceneUnloaded += OnSceneUnloaded;

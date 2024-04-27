@@ -43,8 +43,19 @@ namespace SimpleU.Context
                 Debug.Log("GameContext registered!");
             }
         }
-
         private static GameContext _instance;
+
+        public ContextDictionary ExtraData
+        {
+            get
+            {
+                if (_extraData == null)
+                    _extraData = new ContextDictionary();
+
+                return _extraData;
+            }
+        }
+        private ContextDictionary _extraData;
 
         private int _sceneLoadCount = 0;
 
@@ -52,7 +63,6 @@ namespace SimpleU.Context
         {
             Instance = this;
         }
-
 
         void Update()
         {
