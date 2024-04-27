@@ -19,8 +19,15 @@ namespace SimpleU.Context
                 if (_instance)
                     return _instance;
 
+                var levelContext = FindObjectOfType<T>();
+                if (levelContext)
+                {
+                    Instance = levelContext;
+                    return _instance;
+                }
+
                 var gameObject = new GameObject();
-                var levelContext = gameObject.AddComponent<T>();
+                levelContext = gameObject.AddComponent<T>();
 
                 Instance = levelContext;
                 return _instance;
