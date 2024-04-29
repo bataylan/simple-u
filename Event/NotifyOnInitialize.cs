@@ -20,8 +20,11 @@ namespace SimpleU.Event
             }
 
             _initializer = initializer;
-            @event.Invoke(initializer);
-            @event.RemoveAllListeners();
+            if (@event != null)
+            {
+                @event.Invoke(initializer);
+                @event.RemoveAllListeners();
+            }
         }
 
         public void RemoveListener(UnityAction<T> action)
