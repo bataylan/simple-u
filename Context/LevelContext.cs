@@ -38,7 +38,7 @@ namespace SimpleU.Context
         }
         private LevelStatus _status = LevelStatus.Prepare;
 
-        public UnityEvent<LevelStatus> onStatusChange;
+        public UnityEvent<LevelStatus> onStatusChange = new UnityEvent<LevelStatus>();
 
         public enum LevelStatus
         {
