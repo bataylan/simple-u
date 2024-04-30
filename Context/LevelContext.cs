@@ -5,10 +5,9 @@ using UnityEngine.Events;
 
 namespace SimpleU.Context
 {
+    [DefaultExecutionOrder(-99)]
     public class LevelContext : MonoBehaviour
     {
-        public static LevelContext Instance => GameContext.Instance.LevelContext;
-        
         public ContextDictionary ExtraData
         {
             get
@@ -45,6 +44,11 @@ namespace SimpleU.Context
             Prepare,
             Start,
             Finish
+        }
+
+        public static T GetInstance<T>() where T : LevelContext
+        {
+            return GameContext.Instance as T;
         }
     }
 }

@@ -39,6 +39,7 @@ namespace SimpleU.Context
                     }
                 }
 
+                _instance = value;
                 value.gameObject.name = nameof(GameContext);
                 DontDestroyOnLoad(value.gameObject);
                 Debug.Log("GameContext registered!");
@@ -109,28 +110,53 @@ namespace SimpleU.Context
 
         public UnityEvent<LevelContext.LevelStatus> onLevelStatusChange;
 
-        private int _sceneLoadCount = 0;
+        private int _sceneIndex = 0;
 
-        void Awake()
+        protected virtual void Awake()
         {
             Instance = this;
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
         }
 
-        private void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
+        protected virtual void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
         {
             LevelContext.onStatusChange.AddListener(OnLevelContextStatusChange);
         }
 
-        private void OnLevelContextStatusChange(LevelContext.LevelStatus status)
+        protected virtual void OnLevelContextStatusChange(LevelContext.LevelStatus status)
         {
             onLevelStatusChange.Invoke(status);
         }
 
-        private void OnSceneUnloaded(Scene scene)
+        protected virtual void OnSceneUnloaded(Scene scene)
         {
             LevelContext = null;
+        }
+
+        public void TryChangeScene(LevelContext levelContext, int sceneIndex)
+        {
+            if (levelContext == null)
+                return;
+
+            if (sceneIndex >= SceneManager.sceneCountInBuildSettings)
+            {
+                Debug.Log("LastLevelFinish");
+                return;
+            }
+
+            SceneManager.LoadScene(sceneIndex);
+            _sceneIndex = sceneIndex;
+        }
+
+        public static T GetInstance<T>() where T : GameContext
+        {
+            return Instance as T;
+        }
+
+        public static T GetLevelContext<T>() where T : LevelContext
+        {
+            return Instance.LevelContext as T;
         }
 
         void Update()
@@ -138,8 +164,8 @@ namespace SimpleU.Context
 #if UNITY_EDITOR
             if (Input.GetKeyDown(KeyCode.W))
             {
-                _sceneLoadCount++;
-                SceneManager.LoadScene(_sceneLoadCount % SceneManager.sceneCount);
+                _sceneIndex++;
+                SceneManager.LoadScene(_sceneIndex % SceneManager.sceneCount);
             }
 #endif
         }
