@@ -32,23 +32,29 @@ namespace SimpleU.Context
                     return;
 
                 _status = value;
-                onStatusChange.Invoke(_status);
             }
         }
         private LevelStatus _status = LevelStatus.Prepare;
 
         public UnityEvent<LevelStatus> onStatusChange = new UnityEvent<LevelStatus>();
-
-        public enum LevelStatus
-        {
-            Prepare,
-            Start,
-            Finish
-        }
+        public UnityEvent<bool> onLevelFinish = new UnityEvent<bool>();
 
         public static T GetInstance<T>() where T : LevelContext
         {
             return GameContext.Instance as T;
         }
+
+        protected virtual void FinishLevel(bool success)
+        {
+            Status = LevelStatus.Finish;
+            onLevelFinish.Invoke(success);
+        }
     }
+
+    public enum LevelStatus
+        {
+            Prepare,
+            Start,
+            Finish
+        }
 }

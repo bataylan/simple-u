@@ -108,7 +108,7 @@ namespace SimpleU.Context
         }
         private ContextDictionary _extraData;
 
-        public UnityEvent<LevelContext.LevelStatus> onLevelStatusChange;
+        public UnityEvent<LevelStatus> onLevelStatusChange;
 
         private int _sceneIndex = 0;
 
@@ -124,7 +124,7 @@ namespace SimpleU.Context
             LevelContext.onStatusChange.AddListener(OnLevelContextStatusChange);
         }
 
-        protected virtual void OnLevelContextStatusChange(LevelContext.LevelStatus status)
+        protected virtual void OnLevelContextStatusChange(LevelStatus status)
         {
             onLevelStatusChange.Invoke(status);
         }
