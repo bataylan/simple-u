@@ -108,6 +108,7 @@ namespace SimpleU.Context
         }
         private ContextDictionary _extraData;
 
+        [SerializeField] private ExtraScriptableObject[]  _extraScriptableObjects;
         public UnityEvent<LevelStatus> onLevelStatusChange;
 
         private int _sceneIndex = 0;
@@ -117,6 +118,19 @@ namespace SimpleU.Context
             Instance = this;
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
+            RegisterInitialExtras();
+        }
+
+        private void RegisterInitialExtras()
+        {
+            if (_extraScriptableObjects != null)
+            {
+                for (int i = 0; i < _extraScriptableObjects.Length; i++)
+                {
+                    var extraType = _extraScriptableObjects[i].GetType();
+                    ExtraData.SetExtra(_extraScriptableObjects[i].Key, _extraScriptableObjects[i]);
+                }
+            }
         }
 
         protected virtual void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
