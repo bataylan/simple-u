@@ -48,6 +48,7 @@ namespace SimpleU.Context
         {
             Status = LevelStatus.Finish;
             onLevelFinish.Invoke(success);
+            onLevelFinish.RemoveAllListeners();
         }
     }
 
