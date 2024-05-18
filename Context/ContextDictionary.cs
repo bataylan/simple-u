@@ -23,7 +23,8 @@ namespace SimpleU.Context
 
             if (_extras.ContainsKey(key))
             {
-                Debug.LogError("SetExtra already contains key: " + key);
+                Debug.Log("SetExtra value updated for key: " + key + " value: " + data.ToString());
+                _extras[key] = data;
                 return;
             }
 
