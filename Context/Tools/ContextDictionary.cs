@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,6 +5,18 @@ namespace SimpleU.Context
 {
     public class ContextDictionary
     {
+        public static ContextDictionary Get(bool levelScope = true)
+        {
+            if (levelScope)
+            {
+                return LevelContext.Instance.ExtraData;
+            }
+            else
+            {
+                return GameContext.Instance.ExtraData;
+            }
+        }
+
         private Dictionary<string, object> _extras;
 
         public ContextDictionary()
