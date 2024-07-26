@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
@@ -108,6 +105,18 @@ namespace SimpleU.Context
         }
         private ContextDictionary _extraData;
 
+        public UpdateManager UpdateManager
+        {
+            get
+            {
+                if (_updateManager == null)
+                    _updateManager = new UpdateManager();
+
+                return _updateManager;
+            }
+        }
+        private UpdateManager _updateManager;
+
         [SerializeField] private ExtraScriptableObject[]  _extraScriptableObjects;
         public UnityEvent<LevelStatus> onLevelStatusChange;
 
@@ -119,6 +128,11 @@ namespace SimpleU.Context
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             RegisterInitialExtras();
+        }
+
+        void Update()
+        {
+            UpdateManager.Update();
         }
 
         private void RegisterInitialExtras()
@@ -171,17 +185,6 @@ namespace SimpleU.Context
         public static T GetLevelContext<T>() where T : LevelContext
         {
             return Instance.LevelContext as T;
-        }
-
-        void Update()
-        {
-#if UNITY_EDITOR
-            if (Input.GetKeyDown(KeyCode.W))
-            {
-                _sceneIndex++;
-                SceneManager.LoadScene(_sceneIndex % SceneManager.sceneCount);
-            }
-#endif
         }
     }
 }
