@@ -8,9 +8,9 @@ namespace SimpleU.Context
 {
     public class UpdateManager : IDisposable
     {
-        public static UpdateManager Get(bool levelScope = true)
+        public static UpdateManager Get(bool isSourceLevelContext = true)
         {
-            if (levelScope)
+            if (isSourceLevelContext)
             {
                 return LevelContext.Instance.UpdateManager;
             }
@@ -20,46 +20,38 @@ namespace SimpleU.Context
             }
         }
 
-        private List<UpdateAction> _updateActions;
+        private Dictionary<int, UpdateAction> _updateActions;
         private bool _enabled;
         private int _id;
 
         public UpdateManager()
         {
-            _updateActions = new List<UpdateAction>();
+            _updateActions = new Dictionary<int, UpdateAction>();
         }
 
-        public UpdateAction AddFinish(Action<bool, object> onFinish,
-            float duration, object data = null, Action<float, object> onUpdate = null)
+        public UpdateAction AddFinish(UpdateAction.ActionFinish onFinish,
+            float duration, object data = null, UpdateAction.ActionUpdate onUpdate = null)
         {
             return AddAction(duration, data, onFinish, onUpdate);
         }
 
-        public UpdateAction AddUpdate(Action<float, object> onUpdate,
+        public UpdateAction AddUpdate(UpdateAction.ActionUpdate onUpdate,
             float duration = -1, object data = null,
-            Action<bool, object> onFinish = null)
+            UpdateAction.ActionFinish onFinish = null)
         {
             return AddAction(duration, data, onFinish, onUpdate);
         }
 
         private UpdateAction AddAction(float duration, object data,
-            Action<bool, object> onFinish, Action<float, object> onUpdate)
+            UpdateAction.ActionFinish onFinish, UpdateAction.ActionUpdate onUpdate)
         {
             if (onFinish == null && onUpdate == null)
                 return default;
 
-            var updateAction = new UpdateAction
-            {
-                id = GetUpdateActionId(),
-                data = data,
-                startTime = Time.time,
-                duration = duration,
-                onFinish = onFinish,
-                onUpdate = onUpdate,
-                stopAction = Stop
-            };
+            var updateAction = new UpdateAction(GetUpdateActionId(), data, duration, Time.time,
+                onFinish, onUpdate, Stop);
 
-            _updateActions.Add(updateAction);
+            _updateActions[updateAction.id] = updateAction;
 
             if (!_enabled)
                 _enabled = true;
@@ -69,29 +61,12 @@ namespace SimpleU.Context
 
         private int GetUpdateActionId()
         {
-            int id = _id;
-            IncreaseActionId();
-            return id;
-        }
-
-        private void IncreaseActionId()
-        {
             _id++;
-            if (_id < int.MaxValue)
-            {
-                _id++;
-            }
-            else
-            {
-                if (_updateActions.Count > 0)
-                {
-                    _id = _updateActions[_updateActions.Count - 1].id + 1;
-                }
-                else
-                {
-                    _id = 0;
-                }
-            }
+
+            if (_id > int.MaxValue)
+                _id = 0;
+
+            return _id;
         }
 
         internal void Update()
@@ -99,11 +74,12 @@ namespace SimpleU.Context
             if (!_enabled)
                 return;
 
-            var actions = _updateActions;
             var toRemoveUpdateActions = new List<UpdateAction>();
+            var enumerator = _updateActions.Values.ToList().GetEnumerator();
 
-            foreach (var current in _updateActions.ToList())
+            while (enumerator.MoveNext())
             {
+                var current = enumerator.Current;
                 if (current.Update())
                 {
                     toRemoveUpdateActions.Add(current);
@@ -112,9 +88,12 @@ namespace SimpleU.Context
 
             for (int i = 0; i < toRemoveUpdateActions.Count; i++)
             {
-                var toRemove = toRemoveUpdateActions[i];
-                toRemove.onFinish?.Invoke(true, toRemove.data);
-                _updateActions.Remove(toRemove);
+                //action might be removed from list from anywhere by triggering Stop function
+                if (_updateActions.ContainsKey(toRemoveUpdateActions[i].id))
+                {
+                    _updateActions.Remove(toRemoveUpdateActions[i].id);
+                    toRemoveUpdateActions[i].Finish(true);
+                }
             }
 
             if (_updateActions.Count <= 0)
@@ -123,9 +102,13 @@ namespace SimpleU.Context
 
         private void Stop(UpdateAction updateAction)
         {
-            Debug.Log("Stop");
-            updateAction.onFinish?.Invoke(false, updateAction.data);
-            _updateActions.Remove(updateAction);
+            if (!_updateActions.ContainsKey(updateAction.id))
+            {
+                return;
+            }
+
+            _updateActions.Remove(updateAction.id);
+            updateAction.Finish(false);
 
             if (_updateActions.Count <= 0)
                 _enabled = false;
@@ -136,7 +119,7 @@ namespace SimpleU.Context
             for (int i = 0; i < _updateActions.Count;)
             {
                 var updateAction = _updateActions[i];
-                _updateActions.Remove(updateAction);
+                _updateActions.Remove(updateAction.id);
             }
 
             _enabled = false;
@@ -150,16 +133,40 @@ namespace SimpleU.Context
         public struct UpdateAction : IEquatable<UpdateAction>
         {
             public int id;
-            public object data;
-            public Action<bool, object> onFinish;
-            public Action<float, object> onUpdate;
-            public float duration;
-            public float startTime;
-            public Action<UpdateAction> stopAction;
+            private object data;
+            public ActionUpdate onUpdate;
+            public ActionFinish onFinish;
+            private float duration;
+            private float startTime;
+            internal Action<UpdateAction> stopAction;
 
-            //Return is completed
-            public bool Update()
+            public delegate void ActionFinish(bool complete, object data);
+            public delegate void ActionUpdate(float progress, object data);
+
+            internal UpdateAction(int id, object data, float duration, float startTime,
+                ActionFinish onFinish, ActionUpdate onUpdate,
+                Action<UpdateAction> stopAction)
             {
+                this.id = id;
+                this.data = data;
+                this.duration = duration;
+                this.startTime = startTime;
+                this.onFinish = onFinish;
+                this.onUpdate = onUpdate;
+                this.stopAction = stopAction;
+            }
+
+            /// <summary>
+            /// Update action from UpdateManager
+            /// </summary>
+            /// <returns>Is update action completed</returns>
+            internal bool Update()
+            {
+                if (onUpdate == null && onFinish == null)
+                {
+                    Debug.LogError("OnUpdate & OnFinish null. ID: " + id);
+                    return true;
+                }
                 bool finished = false;
                 float progress = Time.time - startTime;
                 if (duration >= 0)
@@ -172,9 +179,24 @@ namespace SimpleU.Context
                 return finished;
             }
 
-            public void Stop()
+            public UpdateAction Stop()
             {
-                stopAction?.Invoke(this);
+                var tempStopAction = stopAction;
+                stopAction = null;
+                onFinish = null;
+                onUpdate = null;
+                tempStopAction?.Invoke(this);
+                return default;
+            }
+
+            internal void Finish(bool success)
+            {
+                var tempData = data;
+                var tempFinish = onFinish;
+                stopAction = null;
+                onFinish = null;
+                onUpdate = null;
+                tempFinish?.Invoke(success, data);
             }
 
             public bool Equals(UpdateAction other)
