@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace SimpleU.Context
 {
-    public class UpdateManager : IDisposable
+    public class UpdateManager
     {
         public static UpdateManager Get(bool isSourceLevelContext = true)
         {
@@ -20,13 +20,12 @@ namespace SimpleU.Context
             }
         }
 
-        private Dictionary<int, UpdateAction> _updateActions;
+        private List<UpdateAction> _updateActions;
         private bool _enabled;
-        private int _id;
 
         public UpdateManager()
         {
-            _updateActions = new Dictionary<int, UpdateAction>();
+            _updateActions = new List<UpdateAction>();
         }
 
         public UpdateAction AddFinish(UpdateAction.ActionFinish onFinish,
@@ -48,25 +47,15 @@ namespace SimpleU.Context
             if (onFinish == null && onUpdate == null)
                 return default;
 
-            var updateAction = new UpdateAction(GetUpdateActionId(), data, duration, Time.time,
+            var updateAction = new UpdateAction(data, duration, Time.time,
                 onFinish, onUpdate, Stop);
 
-            _updateActions[updateAction.id] = updateAction;
+            _updateActions.Add(updateAction);
 
             if (!_enabled)
                 _enabled = true;
 
             return updateAction;
-        }
-
-        private int GetUpdateActionId()
-        {
-            _id++;
-
-            if (_id > int.MaxValue)
-                _id = 0;
-
-            return _id;
         }
 
         internal void Update()
@@ -75,12 +64,12 @@ namespace SimpleU.Context
                 return;
 
             var toRemoveUpdateActions = new List<UpdateAction>();
-            var enumerator = _updateActions.Values.ToList().GetEnumerator();
+            var enumerator = _updateActions.ToList().GetEnumerator();
 
             while (enumerator.MoveNext())
             {
                 var current = enumerator.Current;
-                if (current.Update())
+                if (!current.IsActive || current.Update())
                 {
                     toRemoveUpdateActions.Add(current);
                 }
@@ -89,10 +78,12 @@ namespace SimpleU.Context
             for (int i = 0; i < toRemoveUpdateActions.Count; i++)
             {
                 //action might be removed from list from anywhere by triggering Stop function
-                if (_updateActions.ContainsKey(toRemoveUpdateActions[i].id))
+                if (_updateActions.Contains(toRemoveUpdateActions[i]))
                 {
-                    _updateActions.Remove(toRemoveUpdateActions[i].id);
-                    toRemoveUpdateActions[i].Finish(true);
+                    _updateActions.Remove(toRemoveUpdateActions[i]);
+
+                    if (toRemoveUpdateActions[i].IsActive)
+                        toRemoveUpdateActions[i].Finish(true);
                 }
             }
 
@@ -102,111 +93,108 @@ namespace SimpleU.Context
 
         private void Stop(UpdateAction updateAction)
         {
-            if (!_updateActions.ContainsKey(updateAction.id))
+            if (!_updateActions.Contains(updateAction))
             {
                 return;
             }
 
-            _updateActions.Remove(updateAction.id);
+            _updateActions.Remove(updateAction);
             updateAction.Finish(false);
 
             if (_updateActions.Count <= 0)
                 _enabled = false;
         }
 
-        private void StopAllImmediate()
+        public void StopAllImmediate()
         {
             for (int i = 0; i < _updateActions.Count;)
             {
                 var updateAction = _updateActions[i];
-                _updateActions.Remove(updateAction.id);
+                _updateActions.Remove(updateAction);
             }
 
             _enabled = false;
         }
 
-        public void Dispose()
+        public class UpdateAction
         {
-            StopAllImmediate();
-        }
+            private object _data;
+            private ActionUpdate _onUpdate;
+            private ActionFinish _onFinish;
+            private float _duration;
+            private float _startTime;
 
-        public struct UpdateAction : IEquatable<UpdateAction>
-        {
-            public int id;
-            private object data;
-            public ActionUpdate onUpdate;
-            public ActionFinish onFinish;
-            private float duration;
-            private float startTime;
             internal Action<UpdateAction> stopAction;
 
+            public bool IsActive { get; private set; }
             public delegate void ActionFinish(bool complete, object data);
             public delegate void ActionUpdate(float progress, object data);
 
-            internal UpdateAction(int id, object data, float duration, float startTime,
+            internal UpdateAction(object data, float duration, float startTime,
                 ActionFinish onFinish, ActionUpdate onUpdate,
                 Action<UpdateAction> stopAction)
             {
-                this.id = id;
-                this.data = data;
-                this.duration = duration;
-                this.startTime = startTime;
-                this.onFinish = onFinish;
-                this.onUpdate = onUpdate;
+                _data = data;
+                _duration = duration;
+                _startTime = startTime;
+                _onFinish = onFinish;
+                _onUpdate = onUpdate;
                 this.stopAction = stopAction;
+                IsActive = true;
             }
 
             /// <summary>
-            /// Update action from UpdateManager
+            /// Update action used by UpdateManager
             /// </summary>
             /// <returns>Is update action completed</returns>
             internal bool Update()
             {
-                if (onUpdate == null && onFinish == null)
+                if (_onUpdate == null && _onFinish == null)
                 {
-                    Debug.LogError("OnUpdate & OnFinish null. ID: " + id);
+                    Debug.LogError("OnUpdate & OnFinish null.");
                     return true;
                 }
+
                 bool finished = false;
-                float progress = Time.time - startTime;
-                if (duration >= 0)
+                float progress = Time.time - _startTime;
+
+                if (_duration >= 0)
                 {
-                    progress = duration == 0 ? 1 : Mathf.Clamp((Time.time - startTime) / duration, 0, 1);
+                    progress = _duration == 0 ? 1 : Mathf.Clamp((Time.time - _startTime) / _duration, 0, 1);
                     finished = progress >= 1;
                 }
 
-                onUpdate?.Invoke(progress, data);
+                _onUpdate?.Invoke(progress, _data);
                 return finished;
             }
 
-            public UpdateAction Stop()
-            {
-                var tempStopAction = stopAction;
-                stopAction = null;
-                onFinish = null;
-                onUpdate = null;
-                tempStopAction?.Invoke(this);
-                return default;
-            }
-
+            //used by update manager
             internal void Finish(bool success)
             {
-                var tempData = data;
-                var tempFinish = onFinish;
-                stopAction = null;
-                onFinish = null;
-                onUpdate = null;
-                tempFinish?.Invoke(success, data);
+                var tempData = _data;
+                var tempFinish = _onFinish;
+                Reset();
+                tempFinish?.Invoke(success, _data);
+                IsActive = false;
             }
 
-            public bool Equals(UpdateAction other)
+            //used by owner
+            public void Stop()
             {
-                return id == other.id;
+                var tempStopAction = stopAction;
+                Reset();
+                tempStopAction?.Invoke(this);
+                IsActive = false;
             }
 
-            public override int GetHashCode()
+            private void Reset()
             {
-                return id;
+                stopAction = default;
+                _onFinish = default;
+                _onUpdate = default;
+                _data = default;
+                _duration = default;
+                _startTime = default;
             }
         }
     }
