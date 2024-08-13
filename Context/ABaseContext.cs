@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using SimpleU.Logger;
 using UnityEngine;
 
 namespace SimpleU.Context
@@ -30,7 +31,7 @@ namespace SimpleU.Context
         }
         private UpdateManager _updateManager;
 
-        [SerializeField] private ExtraScriptableObject[] _extraScriptableObjects;
+        [SerializeField] private ScriptableObject[] _extraScriptableObjects;
 
         protected virtual void Awake()
         {
@@ -43,7 +44,15 @@ namespace SimpleU.Context
             {
                 for (int i = 0; i < _extraScriptableObjects.Length; i++)
                 {
-                    ExtraData.SetExtra(_extraScriptableObjects[i].Key, _extraScriptableObjects[i]);
+                    var scriptableObject = _extraScriptableObjects[i];
+                    if (scriptableObject is IContextDictionaryKeyOwner keyOwner)
+                    {
+                        ExtraData.SetExtra(keyOwner.Key, _extraScriptableObjects[i]);
+                    }
+                    else
+                    {
+                        this.Log(scriptableObject.name + " is not key owner!", Color.yellow);
+                    }
                 }
             }
         }

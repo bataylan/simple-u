@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace SimpleU.Context
 {
-    public abstract class ExtraScriptableObject : ScriptableObject
+    public interface IContextDictionaryKeyOwner
     {
         public abstract string Key { get; }
     }

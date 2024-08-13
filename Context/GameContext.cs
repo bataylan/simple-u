@@ -1,3 +1,4 @@
+using SimpleU.Logger;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
@@ -66,7 +67,7 @@ namespace SimpleU.Context
                 }
                 else
                 {
-                    Debug.Log($"{typeof(T)} already exist!");
+                    LogUtility.Log($"{typeof(T).Name} already exist!");
                     Destroy(newContext);
                     return context;
                 }
@@ -74,7 +75,7 @@ namespace SimpleU.Context
 
             context = newContext;
             DontDestroyOnLoad(newContext.gameObject);
-            Debug.Log($"{typeof(T)} registered!");
+            LogUtility.Log($"{typeof(T).Name} registered!");
             return context;
         }
 
@@ -105,7 +106,7 @@ namespace SimpleU.Context
                 if (context)
                     Destroy(context.gameObject);
 
-                Debug.Log($"{typeof(T)} set to null");
+                this.Log($"{typeof(T).Name} set to null", Color.yellow);
                 context = null;
                 return context;
             }
@@ -116,12 +117,12 @@ namespace SimpleU.Context
 
             if (context != null)
             {
-                Debug.LogError($"{typeof(T)} already exist!");
+                this.LogError($"{typeof(T).Name} already exist!");
                 return context;
             }
 
             context = newContext;
-            Debug.Log($"{typeof(T)} registered!");
+            this.Log($"{typeof(T).Name} registered!");
             return context;
         }
 
@@ -160,7 +161,7 @@ namespace SimpleU.Context
 
             if (sceneIndex >= SceneManager.sceneCountInBuildSettings)
             {
-                Debug.Log("LastLevelFinish");
+                this.Log("LastLevelFinish");
                 return;
             }
 
