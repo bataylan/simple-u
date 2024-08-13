@@ -12,7 +12,7 @@ namespace SimpleU.Context
         {
             if (isSourceLevelContext)
             {
-                return LevelContext.Instance.UpdateManager;
+                return LevelContext.Get().UpdateManager;
             }
             else
             {

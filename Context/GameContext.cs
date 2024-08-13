@@ -11,35 +11,12 @@ namespace SimpleU.Context
         {
             get
             {
-                if (_instance)
-                    return _instance;
-
-                var gameObject = new GameObject();
-                var gameContext = gameObject.AddComponent<GameContext>();
-
-                Instance = gameContext;
+                _instance = CheckGetGameContext(_instance);
                 return _instance;
             }
             private set
             {
-                if (_instance != null)
-                {
-                    if (_instance == value)
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        Debug.Log("GameContext already exist!");
-                        Destroy(value);
-                        return;
-                    }
-                }
-
-                _instance = value;
-                value.gameObject.name = nameof(GameContext);
-                DontDestroyOnLoad(value.gameObject);
-                Debug.Log("GameContext registered!");
+                _instance = SetGameContext(_instance, value);
             }
         }
         private static GameContext _instance;
@@ -48,50 +25,105 @@ namespace SimpleU.Context
         {
             get
             {
-                if (_levelContext)
-                    return _levelContext;
-
-                var levelContext = FindObjectOfType<LevelContext>();
-                if (levelContext)
-                {
-                    LevelContext = levelContext;
-                    return _levelContext;
-                }
-
-                var gameObject = new GameObject();
-                levelContext = gameObject.AddComponent<LevelContext>();
-
-                LevelContext = levelContext;
+                _levelContext = CheckGetLevelContext(_levelContext);
                 return _levelContext;
             }
             private set
             {
-                if (value == null)
-                {
-                    if (_levelContext)
-                        Destroy(_levelContext.gameObject);
-                        
-                    Debug.Log("LevelContext set to null");
-                    _levelContext = null;
-                    return;
-                }
-                else if (_levelContext == value)
-                {
-                    return;
-                }
-
-                if (_levelContext != null)
-                {
-                    Debug.Log("LevelContext already exist!");
-                    Destroy(_levelContext.gameObject);
-                }
-
-                _levelContext = value;
-                _levelContext.gameObject.name = nameof(LevelContext);
-                Debug.Log("LevelContext registered!");
+                _levelContext = SetLevelContext(_levelContext, value);
             }
         }
         private LevelContext _levelContext;
+
+        public virtual T GetLevelContext<T>() where T : LevelContext => _levelContext as T;
+
+        protected static T CheckGetGameContext<T>(T currentContext) where T : GameContext
+        {
+            if (currentContext)
+                return currentContext;
+
+            var newContext = FindObjectOfType<T>();
+            if (newContext)
+            {
+                SetGameContext(currentContext, newContext);
+                return newContext;
+            }
+
+            var gameObject = new GameObject();
+            newContext = gameObject.AddComponent<T>();
+
+            return SetGameContext(currentContext, newContext);
+        }
+
+        protected static T SetGameContext<T>(T context, T newContext) where T : GameContext
+        {
+            if (context != null)
+            {
+                if (context == newContext)
+                {
+                    return context;
+                }
+                else
+                {
+                    Debug.Log($"{typeof(T)} already exist!");
+                    Destroy(newContext);
+                    return context;
+                }
+            }
+
+            context = newContext;
+            newContext.gameObject.name = typeof(T).Name;
+            DontDestroyOnLoad(newContext.gameObject);
+            Debug.Log($"{typeof(T)} registered!");
+            return context;
+        }
+
+        protected virtual T CheckGetLevelContext<T>(T currentContext) where T : LevelContext
+        {
+            if (currentContext)
+                return currentContext;
+
+            var levelContext = FindObjectOfType<T>();
+            if (levelContext)
+            {
+                SetLevelContext(currentContext, levelContext);
+                return levelContext;
+            }
+
+            var gameObject = new GameObject();
+            levelContext = gameObject.AddComponent<T>();
+
+            SetLevelContext(currentContext, levelContext);
+            return levelContext;
+        }
+
+        protected virtual T SetLevelContext<T>(T context, T newContext) where T : LevelContext
+        {
+            if (newContext == null)
+            {
+                if (context)
+                    Destroy(context.gameObject);
+
+                Debug.Log($"{typeof(T)} set to null");
+                context = null;
+                return context;
+            }
+            else if (context == newContext)
+            {
+                return context;
+            }
+
+            if (context != null)
+            {
+                Debug.LogError($"{typeof(T)} already exist!");
+                return context;
+            }
+
+            context = newContext;
+            context.gameObject.name = typeof(T).Name;
+            Debug.Log($"{typeof(T)} registered!");
+            return context;
+        }
 
         public ContextDictionary ExtraData
         {
@@ -117,17 +149,17 @@ namespace SimpleU.Context
         }
         private UpdateManager _updateManager;
 
-        [SerializeField] private ExtraScriptableObject[]  _extraScriptableObjects;
+        [SerializeField] private ExtraScriptableObject[] _extraScriptableObjects;
         public UnityEvent<LevelStatus> onLevelStatusChange;
 
         private int _sceneIndex = 0;
 
         protected virtual void Awake()
         {
-            Instance = this;
+            SetGameContext(_instance, this);
+            RegisterInitialExtras();
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
-            RegisterInitialExtras();
         }
 
         void Update()
@@ -141,7 +173,6 @@ namespace SimpleU.Context
             {
                 for (int i = 0; i < _extraScriptableObjects.Length; i++)
                 {
-                    var extraType = _extraScriptableObjects[i].GetType();
                     ExtraData.SetExtra(_extraScriptableObjects[i].Key, _extraScriptableObjects[i]);
                 }
             }
@@ -149,7 +180,7 @@ namespace SimpleU.Context
 
         protected virtual void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
         {
-            LevelContext.onStatusChange.AddListener(OnLevelContextStatusChange);
+            _levelContext.onStatusChange.AddListener(OnLevelContextStatusChange);
         }
 
         protected virtual void OnLevelContextStatusChange(LevelStatus status)
@@ -159,7 +190,7 @@ namespace SimpleU.Context
 
         protected virtual void OnSceneUnloaded(Scene scene)
         {
-            LevelContext = null;
+            SetLevelContext(LevelContext, null);
         }
 
         public void TryChangeScene(LevelContext levelContext, int sceneIndex)
@@ -177,14 +208,9 @@ namespace SimpleU.Context
             _sceneIndex = sceneIndex;
         }
 
-        public static T GetInstance<T>() where T : GameContext
+        protected static T Get<T>() where T : GameContext
         {
             return Instance as T;
-        }
-
-        public static T GetLevelContext<T>() where T : LevelContext
-        {
-            return Instance.LevelContext as T;
         }
     }
 }

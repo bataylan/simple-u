@@ -6,7 +6,9 @@ namespace SimpleU.Context
     [DefaultExecutionOrder(-99)]
     public class LevelContext : MonoBehaviour
     {
-        public static LevelContext Instance => GameContext.Instance.LevelContext;
+        private const string c_key = nameof(LevelContext);
+
+        public static LevelContext Get() => GameContext.Instance.LevelContext;
 
         public ContextDictionary ExtraData
         {
@@ -58,11 +60,6 @@ namespace SimpleU.Context
             UpdateManager.Update();
         }
 
-        public static T GetInstance<T>() where T : LevelContext
-        {
-            return GameContext.Instance.LevelContext as T;
-        }
-
         protected virtual void FinishLevel(bool success)
         {
             Status = LevelStatus.Finish;
@@ -72,9 +69,9 @@ namespace SimpleU.Context
     }
 
     public enum LevelStatus
-        {
-            Prepare,
-            Start,
-            Finish
-        }
+    {
+        Prepare,
+        Start,
+        Finish
+    }
 }

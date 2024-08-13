@@ -9,7 +9,7 @@ namespace SimpleU.Context
         {
             if (levelScope)
             {
-                return LevelContext.Instance.ExtraData;
+                return LevelContext.Get().ExtraData;
             }
             else
             {
@@ -34,7 +34,7 @@ namespace SimpleU.Context
 
             if (_extras.ContainsKey(key))
             {
-                Debug.Log("SetExtra value updated for key: " + key + " value: " + data.ToString());
+                Debug.Log("<color=yellow>SetExtra value updated for key:</color> " + key + " value: " + data.ToString());
                 _extras[key] = data;
                 return;
             }
