@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 namespace SimpleU.Context
 {
     [DefaultExecutionOrder(-100)]
-    public class GameContext : MonoBehaviour
+    public class GameContext : ABaseContext
     {
         public static GameContext Instance
         {
@@ -51,6 +51,7 @@ namespace SimpleU.Context
 
             var gameObject = new GameObject();
             newContext = gameObject.AddComponent<T>();
+            newContext.gameObject.name = typeof(T).Name;
 
             return SetGameContext(currentContext, newContext);
         }
@@ -72,7 +73,6 @@ namespace SimpleU.Context
             }
 
             context = newContext;
-            newContext.gameObject.name = typeof(T).Name;
             DontDestroyOnLoad(newContext.gameObject);
             Debug.Log($"{typeof(T)} registered!");
             return context;
@@ -92,6 +92,7 @@ namespace SimpleU.Context
 
             var gameObject = new GameObject();
             levelContext = gameObject.AddComponent<T>();
+            levelContext.gameObject.name = typeof(T).Name;
 
             SetLevelContext(currentContext, levelContext);
             return levelContext;
@@ -120,62 +121,21 @@ namespace SimpleU.Context
             }
 
             context = newContext;
-            context.gameObject.name = typeof(T).Name;
             Debug.Log($"{typeof(T)} registered!");
             return context;
         }
 
-        public ContextDictionary ExtraData
-        {
-            get
-            {
-                if (_extraData == null)
-                    _extraData = new ContextDictionary();
-
-                return _extraData;
-            }
-        }
-        private ContextDictionary _extraData;
-
-        public UpdateManager UpdateManager
-        {
-            get
-            {
-                if (_updateManager == null)
-                    _updateManager = new UpdateManager();
-
-                return _updateManager;
-            }
-        }
-        private UpdateManager _updateManager;
-
-        [SerializeField] private ExtraScriptableObject[] _extraScriptableObjects;
+        
         public UnityEvent<LevelStatus> onLevelStatusChange;
 
         private int _sceneIndex = 0;
 
-        protected virtual void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             Instance = this;
-            RegisterInitialExtras();
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
-        }
-
-        void Update()
-        {
-            UpdateManager.Update();
-        }
-
-        private void RegisterInitialExtras()
-        {
-            if (_extraScriptableObjects != null)
-            {
-                for (int i = 0; i < _extraScriptableObjects.Length; i++)
-                {
-                    ExtraData.SetExtra(_extraScriptableObjects[i].Key, _extraScriptableObjects[i]);
-                }
-            }
         }
 
         protected virtual void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)

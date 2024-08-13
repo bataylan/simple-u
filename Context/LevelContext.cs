@@ -4,35 +4,11 @@ using UnityEngine.Events;
 namespace SimpleU.Context
 {
     [DefaultExecutionOrder(-99)]
-    public class LevelContext : MonoBehaviour
+    public class LevelContext : ABaseContext
     {
         private const string c_key = nameof(LevelContext);
 
         public static LevelContext Get() => GameContext.Instance.LevelContext;
-
-        public ContextDictionary ExtraData
-        {
-            get
-            {
-                if (_extraData == null)
-                    _extraData = new ContextDictionary();
-
-                return _extraData;
-            }
-        }
-        private ContextDictionary _extraData;
-
-        public UpdateManager UpdateManager
-        {
-            get
-            {
-                if (_updateManager == null)
-                    _updateManager = new UpdateManager();
-
-                return _updateManager;
-            }
-        }
-        private UpdateManager _updateManager;
 
         public LevelStatus Status
         {
@@ -54,11 +30,6 @@ namespace SimpleU.Context
 
         public UnityEvent<LevelStatus> onStatusChange = new UnityEvent<LevelStatus>();
         public UnityEvent<bool> onLevelFinish = new UnityEvent<bool>();
-
-        void Update()
-        {
-            UpdateManager.Update();
-        }
 
         protected virtual void FinishLevel(bool success)
         {
