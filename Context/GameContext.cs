@@ -156,7 +156,7 @@ namespace SimpleU.Context
 
         protected virtual void Awake()
         {
-            SetGameContext(_instance, this);
+            Instance = this;
             RegisterInitialExtras();
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
@@ -180,7 +180,7 @@ namespace SimpleU.Context
 
         protected virtual void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
         {
-            _levelContext.onStatusChange.AddListener(OnLevelContextStatusChange);
+            LevelContext.onStatusChange.AddListener(OnLevelContextStatusChange);
         }
 
         protected virtual void OnLevelContextStatusChange(LevelStatus status)
