@@ -23,14 +23,13 @@ namespace SimpleU.Collections
                 Initialize(property);
 
             EditorGUI.BeginChangeCheck();
-
-
+            // property.serializedObject.Update();
             _reorderableList.DoList(position);
-
 
             if (EditorGUI.EndChangeCheck())
             {
                 property.serializedObject.ApplyModifiedProperties();
+                EditorUtility.SetDirty(property.serializedObject.targetObject);
             }
         }
 
@@ -49,16 +48,19 @@ namespace SimpleU.Collections
             var items = GetItemProperty(property);
             _reorderableList = new ReorderableList(property.serializedObject, items);
             _reorderableList.onAddCallback += OnAdd;
-            _reorderableList.drawElementCallback += OnDraw;
+            // _reorderableList.drawElementCallback += OnDraw;
         }
 
-        private void OnDraw(Rect rect, int index, bool isActive, bool isFocused)
-        {
-            var elementProperty = GetItemProperty(_property).GetArrayElementAtIndex(index);
-            var valueProperty = elementProperty.FindPropertyRelative("value");
+        // private void OnDraw(Rect rect, int index, bool isActive, bool isFocused)
+        // {
+        //     var elementProperty = GetItemProperty(_property).GetArrayElementAtIndex(index);
+        //     // var idPropery = elementProperty.FindPropertyRelative("id");
+        //     // var valueProperty = elementProperty.FindPropertyRelative("value");
+        //     // GUIContent idLabel = new GUIContent(idPropery.intValue.ToString());
+        //     // EditorGUI.LabelField(rect, idLabel);
             
-            EditorGUI.PropertyField(rect, valueProperty);
-        }
+        //     EditorGUI.PropertyField(rect, elementProperty, true);
+        // }
 
         private void OnAdd(ReorderableList list)
         {

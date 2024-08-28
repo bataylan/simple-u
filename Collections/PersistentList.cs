@@ -8,46 +8,16 @@ using UnityEngine;
 namespace SimpleU.Collections
 {
     [Serializable]
-    public class PersistentList<T> : IList<T>, IEnumerable<T>, IList where T : new()
+    public class PersistentList<T> : IList<T>, IEnumerable<T>, IList where T : new()    
     {
-
-        [SerializeField, HideInInspector] private List<IdValue<T>> _items;
-        [SerializeField, HideInInspector] private int _currentIndex;
+        [SerializeReference] private List<T> _items;
+        [SerializeField, HideInInspector] private List<int> _ids;
+        [SerializeField, HideInInspector] private int _currentIndex = -1;
 
         public T this[int id]
         {
-            get => _items[GetIndexById(id)].value;
-            set
-            {
-                SetById(id, value);
-            }
-        }
-
-        private void SetById(int id, T value)
-        {
-            for (int i = 0; i < _items.Count; i++)
-            {
-                if (_items[i].id == id)
-                {
-                    _items[i] = new IdValue<T>()
-                    {
-                        id = _items[i].id,
-                        value = value
-                    };
-                    return;
-                }
-            }
-        }
-
-        private int GetIndexById(int id)
-        {
-            for (int i = 0; i < _items.Count; i++)
-            {
-                if (_items[i].id == id)
-                    return i;
-            }
-
-            return -1;
+            get => _items[_ids[id]];
+            set => _items[_ids[id]] = value;
         }
 
         public int Count => _items.Count;
@@ -61,42 +31,34 @@ namespace SimpleU.Collections
 
         object IList.this[int index]
         {
-            get => this[index];
-            set => SetById(index, (T)value);
+            get => this[_ids[index]];
+            set => this[_ids[index]] = (T)value;
         }
 
         public PersistentList()
         {
-            _items = new List<IdValue<T>>();
+            _items = new List<T>();
+            _ids = new List<int>();
             _currentIndex = -1;
         }
 
         public void Add(T item)
         {
-            var idValue = new IdValue<T>()
-            {
-                id = _currentIndex,
-                value = item
-            };
-            _items.Add(idValue);
             _currentIndex++;
+            _items.Add(item);
+            _ids.Add(_currentIndex);
         }
 
         public void Clear()
         {
             _items.Clear();
-            _currentIndex = 0;
+            _ids.Clear();
+            _currentIndex = -1;
         }
 
         public bool Contains(T item)
         {
-            for (int i = 0; i < _items.Count; i++)
-            {
-                if (_items[i].value.Equals(item))
-                    return true;
-            }
-
-            return false;
+            return _items.Contains(item);
         }
 
         public void CopyTo(T[] array, int arrayIndex)
@@ -111,24 +73,14 @@ namespace SimpleU.Collections
             }
         }
 
-        public IEnumerator<T> GetEnumerator() => _items.Select(x => x.value).GetEnumerator();
+        public IEnumerator<T> GetEnumerator() => _items.GetEnumerator();
 
         public int IndexOf(T item)
         {
             if (!Contains(item))
                 return -1;
 
-            int id = -1;
-            for (int i = 0; i < _items.Count; i++)
-            {
-                if (_items[i].value.Equals(item))
-                {
-                    id = _items[i].id;
-                    break;
-                }
-            }
-
-            return id;
+            return _ids[_items.IndexOf(item)];
         }
 
         public void Insert(int index, T item)
@@ -144,28 +96,16 @@ namespace SimpleU.Collections
             if (!Contains(item))
                 return false;
 
-            int indexToRemove = -1;
-            for (int i = 0; i < _items.Count; i++)
-            {
-                if (_items[i].value.Equals(item))
-                {
-                    indexToRemove = i;
-                    break;
-                }
-            }
+            var index = _items.IndexOf(item);
+            _items.RemoveAt(index);
+            _ids.RemoveAt(index);
 
-            if (indexToRemove >= 0)
-            {
-                _items.RemoveAt(indexToRemove);
-                return true;
-            }
-
-            return false;
+            return true;
         }
 
-        public void RemoveAt(int id)
+        public void RemoveAt(int index)
         {
-            _items.RemoveAt(GetIndexById(id));
+            _items.RemoveAt(_ids[index]);
         }
 
         IEnumerator IEnumerable.GetEnumerator() => _items.GetEnumerator();
@@ -238,6 +178,6 @@ namespace SimpleU.Collections
     public struct IdValue<T>
     {
         public int id;
-        public T value;
+        [SerializeReference] public T value;
     }
 }
