@@ -83,7 +83,7 @@ namespace SimpleU.DataContainer
             try
             {
                 itemAsset = CreateInstance<ItemAsset>();
-                itemAsset.name = "IA-" + lastIndex;
+                itemAsset.name = itemAsset.GetAssetName(lastIndex);
                 path = AssetDatabase.GetAssetPath(serializedObject.targetObject);
                 int index = listProperty.arraySize;
                 listProperty.InsertArrayElementAtIndex(index);
