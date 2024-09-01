@@ -8,35 +8,58 @@ using UnityEngine;
 namespace SimpleU.DataContainer
 {
     [CustomEditor(typeof(ItemAssetContainer))]
-    public class EItemAssetContainer : Editor
+    public class EItemAssetContainer : EItemAssetContainer<ItemAsset>
     {
-        private ReorderableList _reorderableList;
+        protected override SerializedProperty itemsProperty => serializedObject.FindProperty("items");
+        protected override SerializedProperty intIdentifierProperty => serializedObject.FindProperty("lastIndex");
+    }
+
+    public abstract class EItemAssetContainer<T> : Editor where T : ScriptableObject, IItemAsset
+    {
+        protected abstract SerializedProperty itemsProperty { get; }
+        protected abstract SerializedProperty intIdentifierProperty { get; }
+
+        protected ReorderableList _reorderableList;
 
         void OnEnable()
         {
-            _reorderableList = new ReorderableList(serializedObject, serializedObject.FindProperty("items"));
+            _reorderableList = new ReorderableList(serializedObject, itemsProperty);
             _reorderableList.multiSelect = true;
             _reorderableList.onAddCallback += OnAdd;
             _reorderableList.onRemoveCallback += OnRemove;
             _reorderableList.drawElementCallback += OnDrawElement;
         }
 
+        public override void OnInspectorGUI()
+        {
+            EditorGUI.BeginChangeCheck();
+
+            serializedObject.Update();
+            if (_reorderableList != null)
+                _reorderableList.DoLayoutList();
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                serializedObject.ApplyModifiedProperties();
+                EditorUtility.SetDirty(serializedObject.targetObject);
+                AssetDatabase.SaveAssets();
+            }
+        }
+
         private void OnDrawElement(Rect rect, int index, bool isActive, bool isFocused)
         {
-            var element = serializedObject.FindProperty("items").GetArrayElementAtIndex(index);
+            var element = itemsProperty.GetArrayElementAtIndex(index);
             EditorGUI.PropertyField(rect, element);
         }
 
-        private void OnAdd(ReorderableList list)
+        protected virtual void OnAdd(ReorderableList list)
         {
-            Debug.Log("OnAdd");
             Undo.RecordObjects(targets, "add item asset element");
             AddItemAsset();
         }
 
         private void OnRemove(ReorderableList list)
         {
-            Debug.Log("OnRemove");
             Undo.RecordObjects(targets, "remove item asset element");
 
             if (list.selectedIndices != null && list.selectedIndices.Count > 0)
@@ -53,66 +76,45 @@ namespace SimpleU.DataContainer
             }
         }
 
-        public override void OnInspectorGUI()
-        {
-            EditorGUI.BeginChangeCheck();
-
-            serializedObject.Update();
-            if (_reorderableList != null)
-                _reorderableList.DoLayoutList();
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                var listProperty = serializedObject.FindProperty("items");
-                listProperty.serializedObject.ApplyModifiedProperties();
-                EditorUtility.SetDirty(serializedObject.targetObject);
-                AssetDatabase.SaveAssets();
-            }
-        }
-
         private void AddItemAsset()
         {
-            var listProperty = serializedObject.FindProperty("items");
-
-            ItemAsset itemAsset = null;
+            T itemAsset = null;
             string path = "";
             SerializedProperty element = null;
-            var lastIndexProperty = serializedObject.FindProperty("lastIndex");
-            int lastIndex = lastIndexProperty.intValue;
+            int id = intIdentifierProperty.intValue;
 
             try
             {
-                itemAsset = CreateInstance<ItemAsset>();
-                itemAsset.name = itemAsset.GetAssetName(lastIndex);
+                itemAsset = CreateInstance<T>();
+                itemAsset.name = itemAsset.GetAssetName(id);
                 path = AssetDatabase.GetAssetPath(serializedObject.targetObject);
-                int index = listProperty.arraySize;
-                listProperty.InsertArrayElementAtIndex(index);
-                element = listProperty.GetArrayElementAtIndex(index);
+                int index = itemsProperty.arraySize;
+                itemsProperty.InsertArrayElementAtIndex(index);
+                element = itemsProperty.GetArrayElementAtIndex(index);
             }
             finally
             {
                 AssetDatabase.AddObjectToAsset(itemAsset, path);
                 element.objectReferenceValue = itemAsset;
-                lastIndexProperty.intValue++;
+                intIdentifierProperty.intValue++;
                 EditorUtility.SetDirty(serializedObject.targetObject);
             }
         }
 
         private void RemoveItemAssetAt(int index)
         {
-            var listProperty = serializedObject.FindProperty("items");
-            ItemAsset itemAsset = null;
-            SerializedProperty element = null;
+            T itemAsset = null;
+
             try
             {
-                element = listProperty.GetArrayElementAtIndex(index);
+                var element = itemsProperty.GetArrayElementAtIndex(index);
                 if (element == null)
                 {
                     throw new Exception("Element not found!");
                 }
 
-                itemAsset = (ItemAsset)element.boxedValue;
-                listProperty.DeleteArrayElementAtIndex(index);
+                itemAsset = (T)element.boxedValue;
+                itemsProperty.DeleteArrayElementAtIndex(index);
             }
             finally
             {

@@ -5,8 +5,13 @@ using UnityEngine;
 namespace SimpleU.DataContainer
 {
     [CreateAssetMenu(fileName = nameof(ItemAsset), menuName = "SimpleU/DataContainer/" + nameof(ItemAsset))]
-    public class ItemAsset : ScriptableObject
+    public class ItemAsset : ScriptableObject, IItemAsset
     {
-        public virtual string GetAssetName(int id) => "IA-" + id;
+        string IItemAsset.GetAssetName(int id) => "IA-" + id;
+    }
+
+    public interface IItemAsset
+    {
+        public string GetAssetName(int id);
     }
 }
