@@ -50,9 +50,17 @@ namespace SimpleU.Context
                 return newContext;
             }
 
-            var gameObject = new GameObject();
-            newContext = gameObject.AddComponent<T>();
-            newContext.gameObject.name = typeof(T).Name;
+            var res = Resources.Load<T>("GameContext");
+            if (res != null)
+            {
+                newContext = Instantiate(res);
+            }
+            else
+            {
+                var gameObject = new GameObject();
+                newContext = gameObject.AddComponent<T>();
+                newContext.gameObject.name = typeof(T).Name;
+            }
 
             return SetGameContext(currentContext, newContext);
         }
@@ -91,9 +99,16 @@ namespace SimpleU.Context
                 return levelContext;
             }
 
-            var gameObject = new GameObject();
-            levelContext = gameObject.AddComponent<T>();
-            levelContext.gameObject.name = typeof(T).Name;
+            var res = Resources.Load<T>("LevelContext");
+            if (res != null)
+            {
+                levelContext = Instantiate(res);
+            }
+            else
+            {
+                levelContext = new GameObject().AddComponent<T>();
+                levelContext.gameObject.name = typeof(T).Name;
+            }
 
             SetLevelContext(currentContext, levelContext);
             return levelContext;
