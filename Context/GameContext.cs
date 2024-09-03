@@ -46,8 +46,7 @@ namespace SimpleU.Context
             var newContext = FindObjectOfType<T>();
             if (newContext)
             {
-                SetGameContext(currentContext, newContext);
-                return newContext;
+                return SetGameContext(currentContext, newContext);
             }
 
             var res = Resources.Load<T>("GameContext");
@@ -95,8 +94,7 @@ namespace SimpleU.Context
             var levelContext = FindObjectOfType<T>();
             if (levelContext)
             {
-                SetLevelContext(currentContext, levelContext);
-                return levelContext;
+                return SetLevelContext(currentContext, levelContext);
             }
 
             var res = Resources.Load<T>("LevelContext");
