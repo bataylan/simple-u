@@ -11,24 +11,27 @@ namespace SimpleU.DataContainer
     public class EItemAssetContainer : EItemAssetContainer<ItemAsset>
     {
         protected override SerializedProperty itemsProperty => serializedObject.FindProperty("items");
-        protected override SerializedProperty intIdentifierProperty => serializedObject.FindProperty("lastIndex");
     }
 
     public abstract class EItemAssetContainer<T> : Editor where T : ScriptableObject, IItemAsset
     {
         protected abstract SerializedProperty itemsProperty { get; }
-        protected abstract SerializedProperty intIdentifierProperty { get; }
 
         protected ReorderableList _reorderableList;
+        private ItemAssetContainer<T> _itemAssetContainer;
 
         void OnEnable()
         {
+            _itemAssetContainer = target as ItemAssetContainer<T>;
             _reorderableList = new ReorderableList(serializedObject, itemsProperty);
             _reorderableList.multiSelect = true;
             _reorderableList.onAddCallback += OnAdd;
             _reorderableList.onRemoveCallback += OnRemove;
             _reorderableList.drawElementCallback += OnDrawElement;
+            _reorderableList.onReorderCallback += OnReorder;
         }
+
+
 
         public override void OnInspectorGUI()
         {
@@ -49,7 +52,32 @@ namespace SimpleU.DataContainer
         private void OnDrawElement(Rect rect, int index, bool isActive, bool isFocused)
         {
             var element = itemsProperty.GetArrayElementAtIndex(index);
-            EditorGUI.PropertyField(rect, element);
+
+            var itemAsset = element.objectReferenceValue as ScriptableObject;
+            string itemAssetName = itemAsset.name;
+            string customItemName = "";
+
+            try
+            {
+                customItemName = GetItemNameFromFormattedName(itemAssetName);
+            }
+            catch (Exception)
+            {
+                string formattedDefaultName = GetFormattedItemName(index, null);
+                element.objectReferenceValue.name = GetFormattedItemName(index, null);
+                customItemName = DefaultItemName;
+                Debug.LogError($"Not valid item name! Reformatted from {itemAssetName} to {formattedDefaultName}");
+            }
+
+            EditorGUI.BeginChangeCheck();
+
+            customItemName = EditorGUI.TextField(rect, customItemName);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                element.objectReferenceValue.name = GetFormattedItemName(index, customItemName);
+                EditorUtility.SetDirty(element.objectReferenceValue);
+            }
         }
 
         protected virtual void OnAdd(ReorderableList list)
@@ -76,19 +104,35 @@ namespace SimpleU.DataContainer
             }
         }
 
+        private void OnReorder(ReorderableList list)
+        {
+            for (int i = 0; i < itemsProperty.arraySize; i++)
+            {
+                var element = itemsProperty.GetArrayElementAtIndex(i);
+                var assetName = element.objectReferenceValue.name;
+                string itemName = GetItemNameFromFormattedName(assetName);
+                string correctAssetName = GetFormattedItemName(i, itemName);
+
+                if (!string.Equals(assetName, correctAssetName))
+                {
+                    element.objectReferenceValue.name = correctAssetName;
+                    EditorUtility.SetDirty(element.objectReferenceValue);
+                }
+            }
+        }
+
         private void AddItemAsset()
         {
             T itemAsset = null;
             string path = "";
             SerializedProperty element = null;
-            int id = intIdentifierProperty.intValue;
 
             try
             {
                 itemAsset = CreateInstance<T>();
-                itemAsset.name = itemAsset.GetAssetName(id);
-                path = AssetDatabase.GetAssetPath(serializedObject.targetObject);
                 int index = itemsProperty.arraySize;
+                itemAsset.name = GetFormattedItemName(index, null);
+                path = AssetDatabase.GetAssetPath(serializedObject.targetObject);
                 itemsProperty.InsertArrayElementAtIndex(index);
                 element = itemsProperty.GetArrayElementAtIndex(index);
             }
@@ -96,9 +140,26 @@ namespace SimpleU.DataContainer
             {
                 AssetDatabase.AddObjectToAsset(itemAsset, path);
                 element.objectReferenceValue = itemAsset;
-                intIdentifierProperty.intValue++;
                 EditorUtility.SetDirty(serializedObject.targetObject);
             }
+        }
+
+        private string GetFormattedItemName(int index, string name)
+        {
+            string prefix = _itemAssetContainer.GetPrefix(index);
+            if (string.IsNullOrEmpty(name) || string.IsNullOrWhiteSpace(name))
+            {
+                name = DefaultItemName;
+            }
+
+            return prefix + "-" + name;
+        }
+
+        private string DefaultItemName => typeof(T).Name;
+
+        private string GetItemNameFromFormattedName(string itemName)
+        {
+            return itemName.Split("-")[1];
         }
 
         private void RemoveItemAssetAt(int index)
