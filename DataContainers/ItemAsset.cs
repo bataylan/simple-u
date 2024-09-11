@@ -15,4 +15,10 @@ namespace SimpleU.DataContainer
     {
         public Vector2Int[] RelativeSlotIndexes { get; }
     }
+
+    public interface IInventoryItem : IItemAsset
+    {
+        public Sprite Icon { get; }
+        public string ItemName { get; }
+    }
 }
