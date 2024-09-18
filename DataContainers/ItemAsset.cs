@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,14 +7,27 @@ namespace SimpleU.DataContainer
 {
     public class ItemAsset : ScriptableObject, IItemAsset
     {
-        [SerializeField] private Vector2Int[] relativeSlotIndexes = new Vector2Int[1] { new Vector2Int(0, 0) };
+        [SerializeField] private RowColumnIndex[] relativeSlotIndexes = new RowColumnIndex[1] { new RowColumnIndex(0, 0) };
 
-        public Vector2Int[] RelativeSlotIndexes => relativeSlotIndexes;
+        public RowColumnIndex[] RelativeSlotIndexes => relativeSlotIndexes;
     }
 
     public interface IItemAsset
     {
-        public Vector2Int[] RelativeSlotIndexes { get; }
+        public RowColumnIndex[] RelativeSlotIndexes { get; }
+    }
+
+    [Serializable]
+    public struct RowColumnIndex
+    {
+        public int rowIndex;
+        public int columnIndex;
+
+        public RowColumnIndex(int rowIndex, int columnIndex)
+        {
+            this.rowIndex = rowIndex;
+            this.columnIndex = columnIndex;
+        }
     }
 
     public interface IInventoryItem : IItemAsset
