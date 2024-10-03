@@ -22,7 +22,7 @@ namespace SimpleU.DataContainer
 
         void OnEnable()
         {
-            _itemAssetContainer = target as ItemAssetContainer<T>;
+            _itemAssetContainer = (ItemAssetContainer<T>)target;
             _reorderableList = new ReorderableList(serializedObject, itemsProperty);
             _reorderableList.multiSelect = true;
             _reorderableList.onAddCallback += OnAdd;
@@ -135,12 +135,14 @@ namespace SimpleU.DataContainer
                 path = AssetDatabase.GetAssetPath(serializedObject.targetObject);
                 itemsProperty.InsertArrayElementAtIndex(index);
                 element = itemsProperty.GetArrayElementAtIndex(index);
-            }
-            finally
-            {
+
                 AssetDatabase.AddObjectToAsset(itemAsset, path);
                 element.objectReferenceValue = itemAsset;
                 EditorUtility.SetDirty(serializedObject.targetObject);
+            }
+            catch (Exception e)
+            {
+                Undo.PerformUndo();
             }
         }
 
