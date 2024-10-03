@@ -82,7 +82,6 @@ namespace SimpleU.DataContainer
 
         protected virtual void OnAdd(ReorderableList list)
         {
-            Undo.RecordObjects(targets, "add item asset element");
             AddItemAsset();
         }
 
@@ -90,39 +89,57 @@ namespace SimpleU.DataContainer
         {
             Undo.RecordObjects(targets, "remove item asset element");
 
-            if (list.selectedIndices != null && list.selectedIndices.Count > 0)
+            try
             {
-                for (int i = list.selectedIndices.Count - 1; i >= 0 ; i--)
+                if (list.selectedIndices != null && list.selectedIndices.Count > 0)
                 {
-                    RemoveItemAssetAt(list.selectedIndices[i]);
+                    for (int i = list.selectedIndices.Count - 1; i >= 0; i--)
+                    {
+                        RemoveItemAssetAt(list.selectedIndices[i]);
+                    }
+                }
+                else
+                {
+                    int lastElementIndex = list.count - 1;
+                    RemoveItemAssetAt(lastElementIndex);
                 }
             }
-            else
+            catch (System.Exception e)
             {
-                int lastElementIndex = list.count - 1;
-                RemoveItemAssetAt(lastElementIndex);
+                Undo.PerformUndo();
+                throw new Exception(e.Message);
             }
         }
 
         private void OnReorder(ReorderableList list)
         {
-            for (int i = 0; i < itemsProperty.arraySize; i++)
+            Undo.RecordObjects(targets, "reorder item asset container");
+            try
             {
-                var element = itemsProperty.GetArrayElementAtIndex(i);
-                var assetName = element.objectReferenceValue.name;
-                string itemName = GetItemNameFromFormattedName(assetName);
-                string correctAssetName = GetFormattedItemName(i, itemName);
-
-                if (!string.Equals(assetName, correctAssetName))
+                for (int i = 0; i < itemsProperty.arraySize; i++)
                 {
-                    element.objectReferenceValue.name = correctAssetName;
-                    EditorUtility.SetDirty(element.objectReferenceValue);
+                    var element = itemsProperty.GetArrayElementAtIndex(i);
+                    var assetName = element.objectReferenceValue.name;
+                    string itemName = GetItemNameFromFormattedName(assetName);
+                    string correctAssetName = GetFormattedItemName(i, itemName);
+
+                    if (!string.Equals(assetName, correctAssetName))
+                    {
+                        element.objectReferenceValue.name = correctAssetName;
+                        EditorUtility.SetDirty(element.objectReferenceValue);
+                    }
                 }
+            }
+            catch (System.Exception e)
+            {
+                Undo.PerformRedo();
+                throw new Exception(e.Message);
             }
         }
 
         private void AddItemAsset()
         {
+            Undo.RecordObjects(targets, "add item asset element");
             T itemAsset = null;
             string path = "";
             SerializedProperty element = null;
@@ -143,6 +160,7 @@ namespace SimpleU.DataContainer
             catch (Exception e)
             {
                 Undo.PerformUndo();
+                throw new Exception(e.Message);
             }
         }
 
