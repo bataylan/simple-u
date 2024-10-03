@@ -15,6 +15,7 @@ namespace SimpleU.DataContainer
         [SerializeField, HideInInspector] protected List<T> items;
         [SerializeField, HideInInspector] protected int lastIndex;
 
+        public List<T> Items => items;
         public virtual string Prefix => "IA{0}";
 
         public virtual string GetPrefix(int sortingIndex)
