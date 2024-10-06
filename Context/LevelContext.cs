@@ -6,8 +6,6 @@ namespace SimpleU.Context
     [DefaultExecutionOrder(-99)]
     public class LevelContext : ABaseContext
     {
-        private const string c_key = nameof(LevelContext);
-
         public static LevelContext Get() => GameContext.Instance.LevelContext;
 
         public LevelStatus Status
