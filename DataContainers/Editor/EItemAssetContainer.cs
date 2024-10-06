@@ -10,12 +10,11 @@ namespace SimpleU.DataContainer
     [CustomEditor(typeof(ItemAssetContainer))]
     public class EItemAssetContainer : EItemAssetContainer<ItemAsset>
     {
-        protected override SerializedProperty itemsProperty => serializedObject.FindProperty("items");
     }
 
     public abstract class EItemAssetContainer<T> : Editor where T : ScriptableObject, IItemAsset
     {
-        protected abstract SerializedProperty itemsProperty { get; }
+        protected virtual SerializedProperty itemsProperty => serializedObject.FindProperty("items");
 
         protected ReorderableList _reorderableList;
         private ItemAssetContainer<T> _itemAssetContainer;
