@@ -3,8 +3,10 @@ using UnityEngine;
 
 namespace SimpleU.Context
 {
-    public interface IContextDictionaryKeyOwner
+    public interface IExtraScriptableObject
     {
         public abstract string Key { get; }
+
+        public void OnSet();
     }
 }

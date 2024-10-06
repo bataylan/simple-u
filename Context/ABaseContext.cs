@@ -45,9 +45,10 @@ namespace SimpleU.Context
                 for (int i = 0; i < _extraScriptableObjects.Length; i++)
                 {
                     var scriptableObject = _extraScriptableObjects[i];
-                    if (scriptableObject is IContextDictionaryKeyOwner keyOwner)
+                    if (scriptableObject is IExtraScriptableObject keyOwner)
                     {
                         ExtraData.SetExtra(keyOwner.Key, _extraScriptableObjects[i]);
+                        keyOwner.OnSet();
                     }
                     else
                     {
