@@ -159,7 +159,7 @@ namespace SimpleU.NetworkChainedStateMachine
             }
 
             //if there no state available to move, start update
-            state.StartUpdate();
+            state.Enter();
         }
 
         //WARNING! Recursive function
@@ -181,7 +181,7 @@ namespace SimpleU.NetworkChainedStateMachine
 
             if (backwardTargetState.condition.Value)
             {
-                backwardTargetState.StartUpdate();
+                backwardTargetState.Enter();
                 return;
             }
 

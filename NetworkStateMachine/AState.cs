@@ -19,7 +19,7 @@ namespace SimpleU.NetworkChainedStateMachine
         public bool IsCurrent => _isCurrent;
         private bool _isCurrent;
 
-        internal bool CheckData()
+        public bool CheckData()
         {
             if (!isDefault && condition == null)
             {
@@ -29,7 +29,7 @@ namespace SimpleU.NetworkChainedStateMachine
             return true;
         }
 
-        internal virtual void ForwardEnter()
+        public virtual void ForwardEnter()
         {
             if (_isActive)
             {
@@ -40,26 +40,26 @@ namespace SimpleU.NetworkChainedStateMachine
             _isCurrent = true;
         }
 
-        internal virtual void BackwardEnter()
+        public virtual void BackwardEnter()
         {
             _isCurrent = true;
         }
 
-        internal virtual void StartUpdate() { }
+        public virtual void Enter() { }
 
-        internal virtual void StopUpdate() { }
+        public virtual void Exit() { }
 
-        internal virtual void ForwardExit()
+        public virtual void ForwardExit()
         {
             _isCurrent = false;
-            StopUpdate();
+            Exit();
         }
 
-        internal virtual void BackwardExit()
+        public virtual void BackwardExit()
         {
             _isActive = false;
             _isCurrent = false;
-            StopUpdate();
+            Exit();
         }
 
 #if UNITY_EDITOR
