@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace SimpleU.StateMachine.NetworkChainedStateMachine
+namespace SimpleU.NetworkChainedStateMachine
 {
     //Conditions are unique for states
     public class StateCondition : NetworkBehaviour
@@ -26,7 +26,7 @@ namespace SimpleU.StateMachine.NetworkChainedStateMachine
             _onValueChanged += action;
         }
 
-        public void SetAsDefault(State state)
+        public void SetAsDefault(AState state)
         {
             if (!state.isDefault)
             {

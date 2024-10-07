@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace SimpleU.StateMachine.NetworkChainedStateMachine
+namespace SimpleU.NetworkChainedStateMachine
 {
     public class StatePathFinder
     {
         private HashSet<Connection> _path;
 
-        public HashSet<Connection> PrepareStatePaths(State initialState, State[] allStates)
+        public HashSet<Connection> PrepareStatePaths(AState initialState, AState[] allStates)
         {
-            State[] organizedAllStates = allStates;
+            AState[] organizedAllStates = allStates;
             allStates.CopyTo(organizedAllStates, 0);
 
             var allStatesAsList = organizedAllStates.ToList();
@@ -38,7 +38,7 @@ namespace SimpleU.StateMachine.NetworkChainedStateMachine
         }
 
         //WARNING: Recursive function
-        private void RegisterConnection(State prevState, State state, State[] allStates)
+        private void RegisterConnection(AState prevState, AState state, AState[] allStates)
         {
             //prevent loop
             if (prevState != null && _path.Any(x => string.Equals(x.sourceName, state.stateName)))

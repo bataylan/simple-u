@@ -3,9 +3,9 @@ using Unity.Netcode;
 using UnityEditor;
 using UnityEngine;
 
-namespace SimpleU.StateMachine.NetworkChainedStateMachine
+namespace SimpleU.NetworkChainedStateMachine
 {
-    public abstract class State : NetworkBehaviour
+    public abstract class AState : NetworkBehaviour
     {
         public bool isDefault;
         public string stateName;
@@ -13,7 +13,7 @@ namespace SimpleU.StateMachine.NetworkChainedStateMachine
         public StateCondition[] effects;
 
 
-        private Action<State, StateCondition> _onNotCurrentStateConditionTrigger;
+        private Action<AState, StateCondition> _onNotCurrentStateConditionTrigger;
         public bool IsActive => _isActive;
         private bool _isActive;
         public bool IsCurrent => _isCurrent;

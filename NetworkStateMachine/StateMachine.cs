@@ -4,12 +4,12 @@ using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace SimpleU.StateMachine.NetworkChainedStateMachine
+namespace SimpleU.NetworkChainedStateMachine
 {
     public class StateMachine : NetworkBehaviour
     {
         public bool startOnNetworkSpawn;
-        private HashSet<State> _states;
+        private HashSet<AState> _states;
         private Dictionary<string, string> _stateChangeRecords;
         private HashSet<StatePathFinder.Connection> _paths;
         private HashSet<StateCondition> _conditions;
@@ -57,7 +57,7 @@ namespace SimpleU.StateMachine.NetworkChainedStateMachine
         private void PrepareStates()
         {
             bool success = true;
-            _states = transform.parent.GetComponentsInChildren<State>().ToHashSet();
+            _states = transform.parent.GetComponentsInChildren<AState>().ToHashSet();
 
             var defaultState = _states.SingleOrDefault(x => x.isDefault);
             if (defaultState == null)
@@ -83,7 +83,7 @@ namespace SimpleU.StateMachine.NetworkChainedStateMachine
         [ContextMenu("PreparePath")]
         private void PreparePath()
         {
-            var states = transform.parent.GetComponentsInChildren<State>();
+            var states = transform.parent.GetComponentsInChildren<AState>();
 
             var pathFinder = new StatePathFinder();
             _paths = pathFinder.PrepareStatePaths(states.FirstOrDefault(x => x.isDefault), states);
@@ -126,7 +126,7 @@ namespace SimpleU.StateMachine.NetworkChainedStateMachine
         }
 
         //WARNING! Recursive function
-        private void SetForwardState(State sourceState, State state)
+        private void SetForwardState(AState sourceState, AState state)
         {
             //loop detected
             if (state.IsActive)
@@ -163,7 +163,7 @@ namespace SimpleU.StateMachine.NetworkChainedStateMachine
         }
 
         //WARNING! Recursive function
-        private void SetBackwardState(State state)
+        private void SetBackwardState(AState state)
         {
             //try find last record
             var lastRecord = _stateChangeRecords.LastOrDefault();
@@ -217,19 +217,19 @@ namespace SimpleU.StateMachine.NetworkChainedStateMachine
             SetBackwardState(currentState);
         }
 
-        private State GetCurrentState()
+        private AState GetCurrentState()
         {
             var lastRecord = _stateChangeRecords.LastOrDefault();
             return GetStateByName(lastRecord.Value);
         }
 
-        public void AddStateChangeRecord(State sourceState, State state)
+        public void AddStateChangeRecord(AState sourceState, AState state)
         {
             string sourceStateName = sourceState != null ? sourceState.stateName : "empty";
             _stateChangeRecords.Add(sourceStateName, state.stateName);
         }
 
-        public void RemoveStateChangeRecord(State sourceState)
+        public void RemoveStateChangeRecord(AState sourceState)
         {
             _stateChangeRecords.Remove(sourceState.stateName);
         }
@@ -248,7 +248,7 @@ namespace SimpleU.StateMachine.NetworkChainedStateMachine
             }
         }
 
-        private State GetStateByName(string stateName)
+        private AState GetStateByName(string stateName)
         {
             var state = _states.FirstOrDefault(x => string.Equals(x.stateName, stateName));
             if (state == null)
