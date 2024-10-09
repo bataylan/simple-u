@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace SimpleU.Context
 {
-    public class UpdateManager
+    public class UpdateManager : IDisposable
     {
         public static UpdateManager Get(bool isSourceLevelContext = true)
         {
@@ -105,7 +105,7 @@ namespace SimpleU.Context
                 _enabled = false;
         }
 
-        public void StopAllImmediate()
+        public void Dispose()
         {
             for (int i = 0; i < _updateActions.Count;)
             {
