@@ -10,7 +10,7 @@ namespace SimpleU.DataContainer
 
     }
 
-    public class ItemAssetContainer<T> : ScriptableObject where T : ScriptableObject, IItemAsset
+    public class ItemAssetContainer<T> : BaseItemAssetContainer where T : ScriptableObject, IItemAsset
     {
         [SerializeField, HideInInspector] protected List<T> items;
         [SerializeField, HideInInspector] protected int lastIndex;
@@ -22,7 +22,10 @@ namespace SimpleU.DataContainer
         {
             return string.Format(Prefix, sortingIndex);
         }
+    }
 
-        
+    public abstract class BaseItemAssetContainer : ScriptableObject
+    {
+
     }
 }
