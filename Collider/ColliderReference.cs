@@ -4,21 +4,28 @@ using UnityEngine;
 
 namespace SimpleU.Extensions.Colliders
 {
-    public class ColliderReference : MonoBehaviour
+    public class ColliderReference : MonoBehaviour, IColliderReference
     {
-        private Transform _refTr;
+        [SerializeField] private Transform refTr;
 
-        public void Init(Transform refTr)
+        public void SetOwner(Transform refTr)
         {
-            _refTr = refTr;
+            this.refTr = refTr;
         }
 
-        public T GetComponentSafe<T>()
+        public bool TryGetComponentSafe<T>(out T component)
         {
-            if (!_refTr)
-                return default(T);
+            component = default;
 
-            return _refTr.GetComponent<T>();
+            if (!refTr)
+                return false;
+
+            return refTr.TryGetComponent(out component);
         }
+    }
+
+    public interface IColliderReference
+    {
+        public bool TryGetComponentSafe<T>(out T component);
     }
 }

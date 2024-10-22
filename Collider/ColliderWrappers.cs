@@ -72,8 +72,7 @@ namespace SimpleU.TWOD.Collider
             if (!other.gameObject.CompareTag(targetTag))
                 return;
 
-            var item = other.GetComponentExtended<T>();
-            if (item == default(T))
+            if (!other.gameObject.TryGetComponentExtended(out T item))
                 return;
 
             AddItem(item);
@@ -91,8 +90,7 @@ namespace SimpleU.TWOD.Collider
                 if (colRef == null)
                     return;
 
-                item = colRef.GetComponentSafe<T>();
-                if (item == default(T))
+                if (!colRef.gameObject.TryGetComponentExtended(out item))
                     return;
             }
             RemoveItem(item);

@@ -6,17 +6,17 @@ namespace SimpleU.Extensions.Colliders
 {
     public static class ColliderExtensions
     {
-        public static T GetComponentExtended<T>(this Component other)
+        public static bool TryGetComponentExtended<T>(this GameObject gameObject, out T component)
         {
-            var item = other.gameObject.GetComponent<T>();
-            if (item != null)
-                return item;
+            if (gameObject.TryGetComponent(out component))
+                return true;
 
-            var colRef = other.gameObject.GetComponent<ColliderReference>();
-            if (colRef == null)
-                return default;
+            if (gameObject.TryGetComponent(out ColliderReference refComponent))
+            {
+                return refComponent.TryGetComponentSafe(out component);
+            }
 
-            return colRef.GetComponentSafe<T>();
+            return false;
         }
     }
 }
