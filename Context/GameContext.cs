@@ -43,7 +43,7 @@ namespace SimpleU.Context
             if (currentContext)
                 return currentContext;
 
-            var newContext = FindObjectOfType<T>();
+            var newContext = FindAnyObjectByType<T>();
             if (newContext)
             {
                 return SetGameContext(currentContext, newContext);
@@ -91,7 +91,7 @@ namespace SimpleU.Context
             if (currentContext)
                 return currentContext;
 
-            var levelContext = FindObjectOfType<T>();
+            var levelContext = FindAnyObjectByType<T>();
             if (levelContext)
             {
                 return SetLevelContext(currentContext, levelContext);

@@ -18,7 +18,6 @@ namespace SimpleU.NetworkChainedStateMachine
         private NetworkVariable<bool> _networkVariable = new NetworkVariable<bool>();
         private Action<StateCondition, bool> _onValueChanged;
 
-        private bool _initted;
         private bool _isDefault;
 
         public void ListenCondition(Action<StateCondition, bool> action)
@@ -55,13 +54,6 @@ namespace SimpleU.NetworkChainedStateMachine
             {
                 _onValueChanged.Invoke(this, newValue);
             }
-        }
-
-        public override void OnNetworkSpawn()
-        {
-            base.OnNetworkSpawn();
-            _initted = true;
-            //_networkVariable.OnValueChanged += TriggerOnValueChanged;
         }
 
         internal bool CheckData()
