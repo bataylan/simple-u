@@ -30,6 +30,18 @@ namespace SimpleU.Context
             }
         }
         private UpdateManager _updateManager;
+        
+        public EventBusManager EventBusManager
+        {
+            get
+            {
+                if (_eventBusManager == null)
+                    _eventBusManager = new EventBusManager();
+
+                return _eventBusManager;
+            }
+        }
+        private EventBusManager _eventBusManager;
 
         [SerializeField] private ScriptableObject[] _extraScriptableObjects;
 
