@@ -19,7 +19,7 @@ namespace SimpleU.Context
 
         public void Invoke(T value)
         {
-            
+            _listeners?.Invoke(value);
         }
     }
 
