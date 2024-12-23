@@ -6,7 +6,7 @@ namespace SimpleU.Context
 {
     public class EventBusManager
     {
-        private Dictionary<Type, IEventBus> _dictionary;
+        private Dictionary<Type, IEventBus> _dictionary = new Dictionary<Type, IEventBus>();
 
         public void Subscribe<T>(Action<T> receive)
         {
