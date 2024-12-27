@@ -1,11 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using SimpleU.DataContainer;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace SimpleU.DataContainer
+namespace SimpleU.Editors.DataContainer
 {
     [CustomEditor(typeof(ItemAssetContainer))]
     public class EItemAssetContainer : EItemAssetContainer<ItemAsset>

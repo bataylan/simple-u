@@ -58,7 +58,7 @@ namespace SimpleU.Context
             return updateAction;
         }
 
-        internal void Update()
+        public void Update()
         {
             if (!_enabled)
                 return;

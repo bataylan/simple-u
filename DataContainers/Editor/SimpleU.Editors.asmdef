@@ -1,0 +1,18 @@
+{
+    "name": "SimpleU.Editors",
+    "rootNamespace": "SimpleU.Editors",
+    "references": [
+        "GUID:4d00e37f6427b0f449f2c9353382c0c2"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

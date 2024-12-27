@@ -64,7 +64,7 @@ namespace SimpleU.Context
                     }
                     else
                     {
-                        this.Log(scriptableObject.name + " is not key owner!", Color.yellow);
+                        Debug.Log(scriptableObject.name + " is not key owner!");
                     }
                 }
             }
