@@ -29,10 +29,4 @@ namespace SimpleU.DataContainer
             this.columnIndex = columnIndex;
         }
     }
-
-    public interface IInventoryItem : IItemAsset
-    {
-        public Sprite Icon { get; }
-        public string ItemName { get; }
-    }
 }

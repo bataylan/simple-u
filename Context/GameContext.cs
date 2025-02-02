@@ -1,4 +1,3 @@
-using SimpleU.Logger;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;

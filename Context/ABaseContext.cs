@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using SimpleU.Logger;
 using UnityEngine;
 
 namespace SimpleU.Context

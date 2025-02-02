@@ -1,12 +1,8 @@
 {
-    "name": "SimpleU.Editors.DataContainer",
-    "rootNamespace": "SimpleU.Editors.DataContainer",
-    "references": [
-        "GUID:925f33880b7494c4ab437d1b67a76403"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "name": "SimpleU.DataContainer",
+    "rootNamespace": "SimpleU.DataContainer",
+    "references": [],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
