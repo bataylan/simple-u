@@ -29,7 +29,7 @@ namespace SimpleU.Context
 
         public Action<LevelStatus> onStatusChange;
         public Action<bool> onLevelFinish;
-        
+
         public void StartLevel()
         {
             Status = LevelStatus.Start;

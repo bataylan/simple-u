@@ -8,18 +8,6 @@ namespace SimpleU.Context
 {
     public class UpdateManager : IDisposable
     {
-        public static UpdateManager Get(bool isSourceLevelContext = true)
-        {
-            if (isSourceLevelContext)
-            {
-                return LevelContext.Get().UpdateManager;
-            }
-            else
-            {
-                return GameContext.Instance.UpdateManager;
-            }
-        }
-
         private List<UpdateAction> _updateActions;
         private bool _enabled;
 

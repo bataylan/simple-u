@@ -38,6 +38,8 @@ namespace SimpleU.Context
                 return;
 
             GameObject.DontDestroyOnLoad(referenceObject);
+            var behaviour = referenceObject.GetComponent<GameContextReferenceBehaviour>();
+            behaviour.TriggerOnDestroy += ClearStaticContext;
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
         }
@@ -73,6 +75,14 @@ namespace SimpleU.Context
             {
                 referenceInstance = new GameObject();
                 referenceInstance.name = typeof(T).Name;
+                if (newContext is GameContext)
+                {
+                    referenceInstance.AddComponent<GameContextReferenceBehaviour>();
+                }
+                else
+                {
+                    referenceInstance.AddComponent<LevelContextReferenceBehaviour>();
+                }
             }
             
             currentContext = newContext;
