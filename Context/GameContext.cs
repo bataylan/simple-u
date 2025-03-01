@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
@@ -11,12 +12,8 @@ namespace SimpleU.Context
         {
             get
             {
-                _instance = CheckGetGameContext(_instance);
+                CheckSetContext(ref _instance);
                 return _instance;
-            }
-            private set
-            {
-                _instance = SetGameContext(_instance, value);
             }
         }
         private static GameContext _instance;
@@ -25,165 +22,93 @@ namespace SimpleU.Context
         {
             get
             {
-                _levelContext = CheckGetLevelContext(_levelContext);
+                CheckSetContext(ref _levelContext);
                 return _levelContext;
-            }
-            private set
-            {
-                _levelContext = SetLevelContext(_levelContext, value);
             }
         }
         private LevelContext _levelContext;
 
         public virtual T GetLevelContext<T>() where T : LevelContext => _levelContext as T;
 
-        protected static T CheckGetGameContext<T>(T currentContext) where T : GameContext
+        internal override void EnsureInit(GameObject referenceObject, ScriptableObject[] extraScriptableObjects, GameObject[] extraPrefabs)
         {
-            if (currentContext)
-                return currentContext;
+            base.EnsureInit(referenceObject, extraScriptableObjects, extraPrefabs);
 
-            var newContext = FindAnyObjectByType<T>();
-            if (newContext)
-            {
-                return SetGameContext(currentContext, newContext);
-            }
+            if (!Application.isPlaying)
+                return;
 
-            var res = Resources.Load<T>("GameContext");
-            if (res != null)
-            {
-                newContext = Instantiate(res);
-            }
-            else
-            {
-                var gameObject = new GameObject();
-                newContext = gameObject.AddComponent<T>();
-                newContext.gameObject.name = typeof(T).Name;
-            }
-
-            return SetGameContext(currentContext, newContext);
-        }
-
-        protected static T SetGameContext<T>(T context, T newContext) where T : GameContext
-        {
-            if (context != null)
-            {
-                if (context == newContext)
-                {
-                    return context;
-                }
-                else
-                {
-                    Debug.Log($"{typeof(T).Name} already exist!");
-                    Destroy(newContext);
-                    return context;
-                }
-            }
-
-            context = newContext;
-            DontDestroyOnLoad(newContext.gameObject);
-            Debug.Log($"{typeof(T).Name} registered!");
-            return context;
-        }
-
-        protected virtual T CheckGetLevelContext<T>(T currentContext) where T : LevelContext
-        {
-            if (currentContext)
-                return currentContext;
-
-            var levelContext = FindAnyObjectByType<T>();
-            if (levelContext)
-            {
-                return SetLevelContext(currentContext, levelContext);
-            }
-
-            var res = Resources.Load<T>("LevelContext");
-            if (res != null)
-            {
-                levelContext = Instantiate(res);
-            }
-            else
-            {
-                levelContext = new GameObject().AddComponent<T>();
-                levelContext.gameObject.name = typeof(T).Name;
-            }
-
-            SetLevelContext(currentContext, levelContext);
-            return levelContext;
-        }
-
-        protected virtual T SetLevelContext<T>(T context, T newContext) where T : LevelContext
-        {
-            if (newContext == null)
-            {
-                if (context)
-                    Destroy(context.gameObject);
-
-                Debug.Log($"{typeof(T).Name} set to null");
-                context = null;
-                return context;
-            }
-            else if (context == newContext)
-            {
-                return context;
-            }
-
-            if (context != null)
-            {
-                Debug.LogError($"{typeof(T).Name} already exist!");
-                return context;
-            }
-
-            context = newContext;
-            Debug.Log($"{typeof(T).Name} registered!");
-            return context;
-        }
-
-        
-        public UnityEvent<LevelStatus> onLevelStatusChange;
-
-        private int _sceneIndex = 0;
-
-        protected override void Awake()
-        {
-            base.Awake();
-            Instance = this;
+            GameObject.DontDestroyOnLoad(referenceObject);
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
         }
 
-        protected virtual void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
+        protected static void CheckSetContext<T>(ref T currentContext) where T : ABaseContext, new()
         {
-            LevelContext.onStatusChange.AddListener(OnLevelContextStatusChange);
+            if (currentContext != null)
+                return;
+
+            IContextReference reference = default;
+            var newContext = new T();
+            GameObject referenceInstance = null;
+
+            var behaviour = GameObject.FindAnyObjectByType<ContextReferenceBehaviour<T>>();
+            if (behaviour)
+            {
+                reference = behaviour;
+                referenceInstance = behaviour.gameObject;
+            }
+            else
+            {
+                string behaviourName = newContext is GameContext ? "GameContext" : "LevelContext";
+                var behaviourObj = Resources.Load<GameObject>(behaviourName);
+                var defaultBehaviour = behaviourObj.GetComponent<IContextReference>();
+                    
+                if (defaultBehaviour != null)
+                {
+                    reference = defaultBehaviour;
+                }
+            }
+
+            if (Application.isPlaying && !referenceInstance)
+            {
+                referenceInstance = new GameObject();
+                referenceInstance.name = typeof(T).Name;
+            }
+            
+            currentContext = newContext;
+
+            if (reference != null)
+            {
+                newContext.EnsureInit(referenceInstance, reference.ExtraScriptableObjects, reference.ExtraPrefabs);
+            }
+            else
+            {
+                newContext.EnsureInit(referenceInstance, null, null);
+            }
+            
+            Debug.Log($"{typeof(T).Name} registered!");
         }
 
-        protected virtual void OnLevelContextStatusChange(LevelStatus status)
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        public static void ClearStaticContext()
         {
-            onLevelStatusChange.Invoke(status);
+            _instance = null;
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void SetContext()
+        {
+            CheckSetContext(ref _instance);
+        }
+
+        protected virtual void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
+        {
+            CheckSetContext(ref _levelContext);
         }
 
         protected virtual void OnSceneUnloaded(Scene scene)
         {
-            SetLevelContext(LevelContext, null);
-        }
-
-        public void TryChangeScene(LevelContext levelContext, int sceneIndex)
-        {
-            if (levelContext == null)
-                return;
-
-            if (sceneIndex >= SceneManager.sceneCountInBuildSettings)
-            {
-                Debug.Log("LastLevelFinish");
-                return;
-            }
-
-            SceneManager.LoadScene(sceneIndex);
-            _sceneIndex = sceneIndex;
-        }
-
-        protected static T Get<T>() where T : GameContext
-        {
-            return Instance as T;
+            _levelContext = null;
         }
     }
 }

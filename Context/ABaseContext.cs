@@ -1,10 +1,11 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace SimpleU.Context
 {
-    public abstract class ABaseContext : MonoBehaviour
+    public abstract class ABaseContext
     {
         public ContextDictionary ExtraData
         {
@@ -41,37 +42,67 @@ namespace SimpleU.Context
             }
         }
         private EventBusManager _eventBusManager;
+        protected UpdateManagerBehaviour _updateBehaviour;
 
-        [SerializeField] private ScriptableObject[] _extraScriptableObjects;
-
-        protected virtual void Awake()
+        internal virtual void EnsureInit(GameObject referenceObject, ScriptableObject[] extraScriptableObjects, GameObject[] extraPrefabs)
         {
-            RegisterInitialExtras();
+            RegisterInitialExtras(extraScriptableObjects);
+
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+                return;
+#endif
+
+            InstantiateExtraPrefabs(extraPrefabs);
+
+            _updateBehaviour = referenceObject.AddComponent<UpdateManagerBehaviour>();
+            _updateBehaviour.Init(UpdateManager);
         }
 
-        private void RegisterInitialExtras()
+        private void RegisterInitialExtras(ScriptableObject[] extraScriptableObjects)
         {
-            if (_extraScriptableObjects != null)
+            if (extraScriptableObjects == null)
+                return;
+
+            for (int i = 0; i < extraScriptableObjects.Length; i++)
             {
-                for (int i = 0; i < _extraScriptableObjects.Length; i++)
+                var scriptableObject = extraScriptableObjects[i];
+                if (scriptableObject is IExtraScriptableObject keyOwner)
                 {
-                    var scriptableObject = _extraScriptableObjects[i];
-                    if (scriptableObject is IExtraScriptableObject keyOwner)
-                    {
-                        ExtraData.SetExtra(keyOwner.Key, _extraScriptableObjects[i]);
-                        keyOwner.OnSet();
-                    }
-                    else
-                    {
-                        Debug.Log(scriptableObject.name + " is not key owner!");
-                    }
+                    ExtraData.SetExtra(keyOwner.Key, extraScriptableObjects[i]);
+                    keyOwner.OnSet();
+                }
+                else
+                {
+                    Debug.Log(scriptableObject.name + " is not key owner!");
                 }
             }
         }
 
-        protected virtual void Update()
+        private void InstantiateExtraPrefabs(GameObject[] gameObjects)
         {
-            UpdateManager.Update();
+            if (gameObjects == null)
+                return;
+                
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                GameObject.Instantiate(gameObjects[i]);
+            }
+        }
+
+        public class UpdateManagerBehaviour : MonoBehaviour
+        {
+            private UpdateManager _updateManager;
+
+            public void Init(UpdateManager updateManager)
+            {
+                _updateManager = updateManager;
+            }
+
+            void Update()
+            {
+                _updateManager.Update();
+            }
         }
     }
 }

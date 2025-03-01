@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -26,14 +27,20 @@ namespace SimpleU.Context
         }
         private LevelStatus _status = LevelStatus.Prepare;
 
-        public UnityEvent<LevelStatus> onStatusChange = new UnityEvent<LevelStatus>();
-        public UnityEvent<bool> onLevelFinish = new UnityEvent<bool>();
+        public Action<LevelStatus> onStatusChange;
+        public Action<bool> onLevelFinish;
+        
+        public void StartLevel()
+        {
+            Status = LevelStatus.Start;
+        }
 
         protected virtual void FinishLevel(bool success)
         {
             Status = LevelStatus.Finish;
-            onLevelFinish?.Invoke(success);
-            onLevelFinish.RemoveAllListeners();
+            var temp = onLevelFinish;
+            onLevelFinish = null;
+            temp?.Invoke(success);
         }
     }
 
