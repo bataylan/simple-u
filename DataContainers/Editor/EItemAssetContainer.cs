@@ -18,9 +18,6 @@ namespace SimpleU.Editors.DataContainer
 
         protected ReorderableList _reorderableList;
         private ItemAssetContainer _container;
-        private UnityEvent<ItemAsset> addEvent;
-        private UnityEvent<ItemAsset> removeEvent;
-        private SerializedObject addEventSerialized;
         private ItemAsset _itemAssetToAdd;
         private Type[] _itemTypes;
         private Regex _regexItem;
