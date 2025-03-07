@@ -17,14 +17,14 @@ namespace SimpleU.Context
             }
         }
 
-        private Dictionary<string, object> _extras;
+        private Dictionary<object, object> _extras;
 
         public ContextDictionary()
         {
-            _extras = new Dictionary<string, object>();
+            _extras = new Dictionary<object, object>();
         }
 
-        public void SetExtra(string key, object data)
+        public void SetExtra(object key, object data)
         {
             if (data == null)
             {
@@ -42,7 +42,7 @@ namespace SimpleU.Context
             _extras.Add(key, data);
         }
 
-        public bool TryGetExtra<T>(string key, out T value)
+        public bool TryGetExtra<T>(object key, out T value)
         {
             value = default(T);
             if (!_extras.ContainsKey(key) || !_extras.TryGetValue(key, out var dictValue))
@@ -59,12 +59,17 @@ namespace SimpleU.Context
             return false;
         }
 
-        public T GetExtra<T>(string key, T defaultValue)
+        public T GetExtra<T>(object key, T defaultValue)
         {
             if (!_extras.ContainsKey(key) || !_extras.TryGetValue(key, out var dictValue))
                 return defaultValue;
 
             return (T)dictValue;
+        }
+
+        public bool RemoveExtra<T>(object key)
+        {
+            return _extras.Remove(key);
         }
 
         public void OnNetworkDespawn()
