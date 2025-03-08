@@ -18,5 +18,17 @@ namespace SimpleU.Extensions.Colliders
 
             return false;
         }
+
+        public static bool TryGetComponentExtended<T>(this Collider collider, out T component)
+        {
+            if (collider.attachedRigidbody && collider.attachedRigidbody.TryGetComponent(out component))
+            {
+                return true;
+            }
+            else
+            {
+                return collider.gameObject.TryGetComponentExtended(out component);
+            }
+        }
     }
 }
