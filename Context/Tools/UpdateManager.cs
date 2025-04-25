@@ -170,8 +170,8 @@ namespace SimpleU.Context
             public void Stop()
             {
                 var tempStopAction = stopAction;
-                Reset();
                 tempStopAction?.Invoke(this);
+                Reset();
                 IsActive = false;
             }
 
