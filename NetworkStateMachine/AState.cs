@@ -13,7 +13,6 @@ namespace SimpleU.NetworkChainedStateMachine
         public StateCondition[] effects;
 
 
-        private Action<AState, StateCondition> _onNotCurrentStateConditionTrigger;
         public bool IsActive => _isActive;
         private bool _isActive;
         public bool IsCurrent => _isCurrent;
