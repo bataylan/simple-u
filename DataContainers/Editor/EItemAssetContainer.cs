@@ -116,6 +116,13 @@ namespace SimpleU.Editors.DataContainer
             var element = itemsProperty.GetArrayElementAtIndex(index);
 
             var itemAsset = element.objectReferenceValue as ScriptableObject;
+            if (!itemAsset)
+            {
+                Debug.LogError($"ItemAsset reference not found and deleted at index: {index}");
+                RemoveFromMainAsset(itemsProperty, index, true);
+                return;
+            }
+
             string itemAssetName = itemAsset.name;
             string customItemName = "";
 
@@ -295,11 +302,14 @@ namespace SimpleU.Editors.DataContainer
             }
             finally
             {
-                AssetDatabase.RemoveObjectFromAsset(itemAsset);
-                if (delete)
+                if (itemAsset)
                 {
-                    var path = AssetDatabase.GetAssetPath(itemAsset);
-                    AssetDatabase.DeleteAsset(path);
+                    AssetDatabase.RemoveObjectFromAsset(itemAsset);
+                    if (delete)
+                    {
+                        var path = AssetDatabase.GetAssetPath(itemAsset);
+                        AssetDatabase.DeleteAsset(path);
+                    }
                 }
                 EditorUtility.SetDirty(itemsProperty.serializedObject.targetObject);
             }
