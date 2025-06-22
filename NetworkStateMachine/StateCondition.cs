@@ -33,7 +33,9 @@ namespace SimpleU.NetworkChainedStateMachine
             }
 
             _isDefault = true;
-            _networkVariable.Value = true;
+
+            if (IsServer)
+                _networkVariable.Value = true;
         }
 
         public void ChangeValue(bool value)
