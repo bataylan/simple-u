@@ -40,6 +40,12 @@ namespace SimpleU.NetworkChainedStateMachine
 
         public void ChangeValue(bool value)
         {
+            if (!IsServer)
+            {
+                Debug.Log("StateCondition can only be changed by server!");
+                return;
+            }
+                
             if (value == _networkVariable.Value)
                 return;
 
