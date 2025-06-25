@@ -8,25 +8,31 @@ using UnityEngine;
 
 namespace SimpleU.Editors.DataContainer
 {
-    [CustomEditor(typeof(ItemAssetContainer))]
+    [CustomEditor(typeof(AssetContainer))]
     public class EAssetContainer : EAssetContainer<ScriptableObject>
     {
 
     }
-    
+
     public class EAssetContainer<T> : Editor where T : ScriptableObject
     {
         protected virtual SerializedProperty itemsProperty => serializedObject.FindProperty("items");
 
         protected ReorderableList _reorderableList;
-        private ItemAssetContainer _container;
+        private AssetContainer _container;
+        private string _prefix;
         private T _itemAssetToAdd;
         private Type[] _itemTypes;
         private Regex _regexItem;
 
         void OnEnable()
         {
-            _container = (ItemAssetContainer)target;
+            _container = (AssetContainer)target;
+            _prefix = new string(target.name.Where(x => char.IsUpper(x)).ToArray());
+            if (string.IsNullOrEmpty(_prefix))
+            {
+                _prefix = target.name[0].ToString();
+            }
             ValidateItemListMatchWithAssets(_container);
             CacheAddDropdownOptionTypes();
             _regexItem = new Regex("^[a-zA-Z0-9 _]*$");
@@ -42,9 +48,10 @@ namespace SimpleU.Editors.DataContainer
 
         private void CacheAddDropdownOptionTypes()
         {
+            var assetType = typeof(T);
             _itemTypes = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(domainAssembly => domainAssembly.GetTypes())
-                .Where(type => type.IsSubclassOf(typeof(ItemAsset)) && !type.IsAbstract).ToArray();
+                .Where(type => !type.IsAbstract && (type.Equals(assetType) || type.IsSubclassOf(assetType))).ToArray();
             // alternative: .GetExportedTypes()
             // alternative: typeof(B).IsAssignableFrom(type)
             // alternative: => type.IsSubclassOf(typeof(B))
@@ -52,7 +59,7 @@ namespace SimpleU.Editors.DataContainer
             // alternative: && ! type.IsAbstract
         }
 
-        public static void ValidateItemListMatchWithAssets(ItemAssetContainer container)
+        public static void ValidateItemListMatchWithAssets(AssetContainer container)
         {
             var serializedObject = new SerializedObject(container);
             var itemsProperty = serializedObject.FindProperty("items");
@@ -61,8 +68,8 @@ namespace SimpleU.Editors.DataContainer
 
             for (int i = 0; i < allItemAssets.Length; i++)
             {
-                var loadedItem = allItemAssets[i] as ItemAsset;
-                if (loadedItem is not ItemAsset itemAsset)
+                var loadedItem = allItemAssets[i] as T;
+                if (loadedItem is not T itemAsset)
                     continue;
 
                 if (itemsProperty.arraySize > i)
@@ -270,7 +277,7 @@ namespace SimpleU.Editors.DataContainer
         private static void CheckRemoveFromParent(T toRemoveItem)
         {
             var otherItemAssetPath = AssetDatabase.GetAssetPath(toRemoveItem);
-            var otherItemAssetContainer = AssetDatabase.LoadAssetAtPath<ItemAssetContainer>(otherItemAssetPath);
+            var otherItemAssetContainer = AssetDatabase.LoadAssetAtPath<AssetContainer>(otherItemAssetPath);
             if (otherItemAssetContainer == null)
                 return;
 
@@ -332,13 +339,12 @@ namespace SimpleU.Editors.DataContainer
 
         private string GetFormattedItemName(int index, string name)
         {
-            string prefix = _container.GetPrefix(index);
             if (string.IsNullOrEmpty(name) || string.IsNullOrWhiteSpace(name))
             {
                 name = DefaultItemName;
             }
 
-            return prefix + "-" + name;
+            return _prefix + "-" + name;
         }
 
         private string DefaultItemName => typeof(T).Name;
