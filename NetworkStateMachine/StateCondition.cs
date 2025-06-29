@@ -25,6 +25,11 @@ namespace SimpleU.NetworkChainedStateMachine
             _onValueChanged += action;
         }
 
+        void Awake()
+        {
+            _networkVariable.OnValueChanged += TriggerOnValueChanged;
+        }
+
         public void SetAsDefault(AState state)
         {
             if (!state.isDefault)
@@ -50,7 +55,6 @@ namespace SimpleU.NetworkChainedStateMachine
                 return;
 
             _networkVariable.Value = value;
-            TriggerOnValueChanged(!value, value);
         }
 
         private void TriggerOnValueChanged(bool previousValue, bool newValue)
