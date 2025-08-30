@@ -258,12 +258,5 @@ namespace SimpleU.NetworkChainedStateMachine
 
             return state;
         }
-
-#if UNITY_EDITOR
-        void OnSceneGUI()
-        {
-            UnityEditor.Handles.Label(transform.position + transform.up * 2, GetCurrentState().stateName);
-        }
-#endif
     }
 }
