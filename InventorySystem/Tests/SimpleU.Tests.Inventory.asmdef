@@ -1,0 +1,19 @@
+{
+    "name": "SimpleU.Tests.Inventory",
+    "rootNamespace": "SimpleU.Tests.Inventory",
+    "references": [
+        "GUID:925f33880b7494c4ab437d1b67a76403",
+        "GUID:864ee62b8aeb9db4f912eb02378191e4"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

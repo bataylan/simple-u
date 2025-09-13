@@ -1,0 +1,16 @@
+{
+    "name": "SimpleU.Inventory",
+    "rootNamespace": "SimpleU.Inventory",
+    "references": [
+        "GUID:925f33880b7494c4ab437d1b67a76403"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
