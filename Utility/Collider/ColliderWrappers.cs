@@ -8,28 +8,26 @@ namespace SimpleU.TWOD.Collider
 {
     public class TriggerEnhancedHandler : MonoBehaviour
     {
-        public Action<Collider2D> handleTriggerEnter;
-        public Action<Collider2D> handleTriggerExit;
+        private Action<Collider2D> _handleTriggerEnter;
+        private Action<Collider2D> _handleTriggerExit;
 
-        public void Init(Action<Collider2D> triggerEnter,
+        public void SetListeners(Action<Collider2D> triggerEnter,
             Action<Collider2D> triggerExit)
         {
-            if (triggerEnter != null)
-                handleTriggerEnter += triggerEnter;
-            if (triggerExit != null)
-                handleTriggerExit += triggerExit;
+            _handleTriggerEnter = triggerEnter;
+            _handleTriggerExit = triggerExit;
         }
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (handleTriggerEnter != null)
-                handleTriggerEnter.Invoke(other);
+            if (_handleTriggerEnter != null)
+                _handleTriggerEnter.Invoke(other);
         }
 
         private void OnTriggerExit2D(Collider2D other)
         {
-            if (handleTriggerExit != null)
-                handleTriggerExit.Invoke(other);
+            if (_handleTriggerExit != null)
+                _handleTriggerExit.Invoke(other);
         }
     }
 
@@ -63,8 +61,7 @@ namespace SimpleU.TWOD.Collider
 
             this.targetTag = targetTag;
             _triggerHandler = triggerHandler;
-            _triggerHandler.handleTriggerEnter += OnTriggerEnter2D;
-            _triggerHandler.handleTriggerExit += OnTriggerExit2D;
+            _triggerHandler.SetListeners(OnTriggerEnter2D, OnTriggerExit2D);
         }
 
         private void OnTriggerEnter2D(Collider2D other)
@@ -164,8 +161,7 @@ namespace SimpleU.TWOD.Collider
         public void Remove()
         {
             ResetActions();
-            _triggerHandler.handleTriggerEnter -= OnTriggerEnter2D;
-            _triggerHandler.handleTriggerExit -= OnTriggerExit2D;
+            _triggerHandler.SetListeners(null, null);
             _triggerHandler = null;
             RemoveAll();
         }
