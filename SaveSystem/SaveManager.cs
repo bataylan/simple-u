@@ -40,7 +40,6 @@ namespace SimpleU.SaveSystem
         public void Subscribe(Action<SaveManager> onSave) { _saveTrigger += onSave; }
         public void Unsubscribe(Action<SaveManager> onSave) { _saveTrigger -= onSave; }
 
-        //TODO make it private
         public void SaveAll()
         {
             _saveTrigger?.Invoke(this);
