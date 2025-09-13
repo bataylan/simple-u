@@ -1,0 +1,16 @@
+{
+    "name": "SimpleU.SaveSystem",
+    "rootNamespace": "",
+    "references": [
+        "GUID:4d00e37f6427b0f449f2c9353382c0c2"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
