@@ -160,16 +160,31 @@ namespace SimpleU.SaveSystem
             else //scene instance
             {
                 var prefab = UnityEditor.PrefabUtility.GetCorrespondingObjectFromSource(gameObject);
-                var assetPath = UnityEditor.AssetDatabase.GetAssetPath(prefab);
-                var loadedPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath(assetPath, typeof(GameObject)) as GameObject;
-                var prefabComponent = loadedPrefab.GetComponent<ObjectSaveManager>();
+                if (prefab)
+                {
+                    var assetPath = UnityEditor.AssetDatabase.GetAssetPath(prefab);
+                    var loadedPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath(assetPath, typeof(GameObject)) as GameObject;
+                    var prefabIdentifier = loadedPrefab.GetComponent<ObjectSaveManager>();
 
-                UpdatePrefab_Editor(prefabComponent);
-                UpdateInstance_Editor(prefabComponent);
+                    UpdatePrefab_Editor(prefabIdentifier);
+                    UpdateInstance_Editor(prefabIdentifier);
+                }
+                else //not prefab, only game objects
+                {
+                    var instanceIdentifier = gameObject.GetComponent<ObjectSaveManager>();
+                    UpdateComponentIds_Editor(instanceIdentifier);
+                    UpdateInstance_Editor(null);
+                }
             }
         }
 
         private static void UpdatePrefab_Editor(ObjectSaveManager prefabIdentifier)
+        {
+            UpdatePrefabId_Editor(prefabIdentifier);
+            UpdateComponentIds_Editor(prefabIdentifier);
+        }
+
+        private static void UpdatePrefabId_Editor(ObjectSaveManager prefabIdentifier)
         {
             if (!prefabIdentifier)
                 return;
@@ -179,6 +194,12 @@ namespace SimpleU.SaveSystem
                 prefabIdentifier.id = "";
                 UnityEditor.EditorUtility.SetDirty(prefabIdentifier.gameObject);
             }
+        }
+
+        private static void UpdateComponentIds_Editor(ObjectSaveManager prefabIdentifier)
+        {
+            if (!prefabIdentifier)
+                return;
 
             var prefabSaveComponents = prefabIdentifier.gameObject.GetComponentsInChildren<ISaveComponent>();
             int cachedComponentLength = prefabIdentifier.saveComponents == null ? 0 : prefabIdentifier.saveComponents.Length;
@@ -235,7 +256,8 @@ namespace SimpleU.SaveSystem
 
         private void UpdateInstance_Editor(ObjectSaveManager prefabIdentifier)
         {
-            bool isPrefabIdMatch = prefabIdentifier != null && string.Equals(prefabIdentifier.Id, id);
+            bool isPrefabIdMatch = prefabIdentifier != null && !prefabIdentifier.isPermanentId
+                && string.Equals(prefabIdentifier.Id, id);
 
             if (string.IsNullOrEmpty(id) || isPrefabIdMatch)
             {
