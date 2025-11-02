@@ -32,19 +32,7 @@ namespace SimpleU.Editors.DataContainer
             _serializedObject = source;
             _arrayProperty = arrayProperty;
 
-            _prefix = prefix;
-            if (string.IsNullOrEmpty(prefix))
-            {
-                _prefix = new string(_serializedObject.targetObject.name.Where(x => char.IsUpper(x)).ToArray());
-
-                if (string.IsNullOrEmpty(_prefix))
-                {
-                    _prefix = source.targetObject.name[0].ToString();
-                }
-            }
-
-            if (!string.IsNullOrEmpty(_prefix))
-                _prefix += "-";
+            EnsurePrefix(prefix);
 
             ValidateItemListMatchWithAssets();
             CacheAddDropdownOptionTypes();
@@ -57,6 +45,29 @@ namespace SimpleU.Editors.DataContainer
             _reorderableList.onRemoveCallback += OnRemove;
             _reorderableList.drawElementCallback += OnDrawElement;
             _reorderableList.onReorderCallback += OnReorder;
+        }
+
+        private void EnsurePrefix(string prefix)
+        {
+            string name = _serializedObject.targetObject.name;
+            if (string.IsNullOrEmpty(name))
+            {
+                name = typeof(T).Name;
+            }
+
+            _prefix = prefix;
+            if (string.IsNullOrEmpty(prefix))
+            {
+                _prefix = new string(name.Where(x => char.IsUpper(x)).ToArray());
+
+                if (string.IsNullOrEmpty(_prefix))
+                {
+                    _prefix = name.ToString();
+                }
+            }
+
+            if (!string.IsNullOrEmpty(_prefix))
+                _prefix += "-";
         }
 
         private void CacheAddDropdownOptionTypes()

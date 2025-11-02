@@ -5,7 +5,7 @@ using UnityEngine;
 namespace SimpleU.DataContainer
 {
     [CreateAssetMenu(fileName = nameof(ItemAssetContainer), menuName = "SimpleU/DataContainer/" + nameof(ItemAssetContainer))]
-    public class ItemAssetContainer : ScriptableObject
+    public class ItemAssetContainer : AssetContainer
     {
         [SerializeField, HideInInspector] protected List<ItemAsset> items;
 
