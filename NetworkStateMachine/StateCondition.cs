@@ -68,6 +68,17 @@ namespace SimpleU.NetworkChainedStateMachine
             }
         }
 
+#if UNITY_EDITOR
+        void OnValidate()
+        {
+            if (string.IsNullOrEmpty(Key) && TryGetComponent<AState>(out var state))
+            {
+                var type = state.GetType();
+                _key = type.Name + "_Condition";
+            }
+        }
+#endif
+
         internal bool CheckData()
         {
             if (string.IsNullOrEmpty(Key))

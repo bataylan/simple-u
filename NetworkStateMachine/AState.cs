@@ -67,6 +67,15 @@ namespace SimpleU.NetworkChainedStateMachine
             if (_isCurrent)
                 Handles.Label(transform.position + (2 * Vector3.up), stateName);
         }
+
+        void OnValidate()
+        {
+            if (string.IsNullOrEmpty(stateName))
+            {
+                var type = GetType();
+                stateName = type.Name;
+            }
+        }
 #endif
     }
 }

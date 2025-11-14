@@ -253,7 +253,7 @@ namespace SimpleU.NetworkChainedStateMachine
             var state = _states.FirstOrDefault(x => string.Equals(x.stateName, stateName));
             if (state == null)
             {
-                throw new Exception("State not found!");
+                throw new Exception($"State not found! StateName: " + stateName);
             }
 
             return state;
