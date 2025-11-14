@@ -126,13 +126,15 @@ namespace SimpleU.NetworkChainedStateMachine
         }
 
         //WARNING! Recursive function
-        private void SetForwardState(AState sourceState, AState state)
+        private void SetForwardState(AState sourceState, AState state, bool autoForward = true)
         {
+            AddStateChangeRecord(sourceState, state);
+
             //loop detected
             if (state.IsActive)
             {
-                Debug.Log("Loop Detected!");
-                RemoveLoopedRecord(state.stateName);
+                throw new Exception("Loop Detected!");
+                // RemoveLoopedRecord(state.stateName);
             }
 
             Debug.Log("SetForwardState " + (sourceState == null ? "empty" : sourceState.stateName) + " -> " + state.stateName);
@@ -143,18 +145,22 @@ namespace SimpleU.NetworkChainedStateMachine
 
             //set state entered
             state.ForwardEnter();
-            AddStateChangeRecord(sourceState, state);
 
-            //Check is there a available next state to move
-            var forwardConnections = _paths.Where(x => string.Equals(x.sourceName, state.stateName));
-            foreach (var c in forwardConnections)
+            if (autoForward)
             {
-                var forwardState = _states.FirstOrDefault(x => string.Equals(x.stateName, c.targetName));
-                if (forwardState.condition.Value)
+                //Check is there a available next state to move
+                var forwardConnections = _paths.Where(x => string.Equals(x.sourceName, state.stateName));
+                foreach (var c in forwardConnections)
                 {
-                    state.ForwardExit();
-                    SetForwardState(state, forwardState);
-                    return;
+                    var forwardState = _states.FirstOrDefault(x => string.Equals(x.stateName, c.targetName));
+                    if (forwardState.condition.Value)
+                    {
+                        bool isLoop = forwardState.IsActive;
+                        bool nextAutoForward = !isLoop;
+                        state.ForwardExit();
+                        SetForwardState(state, forwardState, nextAutoForward);
+                        return;
+                    }
                 }
             }
 
@@ -236,15 +242,27 @@ namespace SimpleU.NetworkChainedStateMachine
 
         private void RemoveLoopedRecord(string targetStateName)
         {
-            string lastTargetName = "";
-            while (!string.Equals(lastTargetName, targetStateName))
+            string currentTargetState = targetStateName;
+            bool keyFound = false;
+            var deactivateList = new List<AState>();
+            do
             {
-                string sourceStateName = lastTargetName;
-                if (_stateChangeRecords.ContainsKey(sourceStateName))
+                keyFound = _stateChangeRecords.ContainsKey(currentTargetState);
+                if (keyFound)
                 {
-                    lastTargetName = _stateChangeRecords.GetValueOrDefault(sourceStateName);
-                    _stateChangeRecords.Remove(sourceStateName);
+                    var state = GetStateByName(currentTargetState);
+                    deactivateList.Add(state);
+
+                    var tempStateName = currentTargetState;
+                    currentTargetState = _stateChangeRecords.GetValueOrDefault(currentTargetState);
+                    _stateChangeRecords.Remove(tempStateName);
                 }
+            } while (keyFound && !string.Equals(currentTargetState, targetStateName));
+
+            for (int i = deactivateList.Count - 1; i >= 0; i--)
+            {
+                var state = deactivateList[i];
+                state.BackwardExit();
             }
         }
 

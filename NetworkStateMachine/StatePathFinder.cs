@@ -52,7 +52,6 @@ namespace SimpleU.NetworkChainedStateMachine
                 var targetStates = allStates.Where(x => string.Equals(x.condition.Key, effect.Key));
                 if (targetStates == null || targetStates.Count() <= 0)
                 {
-                    _path = null;
                     return;
                 }
 

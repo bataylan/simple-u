@@ -8,5 +8,11 @@ namespace SimpleU.NetworkChainedStateMachine
             base.ForwardEnter();
             condition.SetAsDefault(this);
         }
+        
+        public override void Enter()
+        {
+            base.Enter();
+            effects[0].ChangeValue(true);
+        }
     }
 }
