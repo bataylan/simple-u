@@ -10,7 +10,7 @@ namespace SimpleU.NetworkChainedStateMachine
     {
         public bool startOnNetworkSpawn;
         private HashSet<AState> _states;
-        private Dictionary<string, string> _stateChangeRecords;
+        private Stack<KeyValuePair<string, string>> _stateChangeRecords;
         private HashSet<StatePathFinder.Connection> _paths;
         private HashSet<StateCondition> _conditions;
 
@@ -18,7 +18,7 @@ namespace SimpleU.NetworkChainedStateMachine
         void Awake()
         {
             Prepare();
-            _stateChangeRecords = new Dictionary<string, string>();
+            _stateChangeRecords = new Stack<KeyValuePair<string, string>>();
         }
 
         public override void OnNetworkSpawn()
@@ -126,16 +126,9 @@ namespace SimpleU.NetworkChainedStateMachine
         }
 
         //WARNING! Recursive function
-        private void SetForwardState(AState sourceState, AState state, bool autoForward = true)
+        private void SetForwardState(AState sourceState, AState state)
         {
             AddStateChangeRecord(sourceState, state);
-
-            //loop detected
-            if (state.IsActive)
-            {
-                throw new Exception("Loop Detected!");
-                // RemoveLoopedRecord(state.stateName);
-            }
 
             Debug.Log("SetForwardState " + (sourceState == null ? "empty" : sourceState.stateName) + " -> " + state.stateName);
             if (sourceState)
@@ -143,24 +136,27 @@ namespace SimpleU.NetworkChainedStateMachine
                 sourceState.ForwardExit();
             }
 
+            //loop detected
+            if (state.IsActive)
+            {
+                Debug.Log("Loop Detected! Cleaning loop states");
+                RemoveLoopedRecord(state.stateName);
+            }
+
             //set state entered
             state.ForwardEnter();
 
-            if (autoForward)
+            //Check is there a available next state to move
+            var forwardConnections = _paths.Where(x => string.Equals(x.sourceName, state.stateName));
+            foreach (var c in forwardConnections)
             {
-                //Check is there a available next state to move
-                var forwardConnections = _paths.Where(x => string.Equals(x.sourceName, state.stateName));
-                foreach (var c in forwardConnections)
+                var forwardState = _states.FirstOrDefault(x => string.Equals(x.stateName, c.targetName));
+                if (forwardState.condition.Value)
                 {
-                    var forwardState = _states.FirstOrDefault(x => string.Equals(x.stateName, c.targetName));
-                    if (forwardState.condition.Value)
-                    {
-                        bool isLoop = forwardState.IsActive;
-                        bool nextAutoForward = !isLoop;
-                        state.ForwardExit();
-                        SetForwardState(state, forwardState, nextAutoForward);
-                        return;
-                    }
+                    bool isLoop = forwardState.IsActive;
+                    state.ForwardExit();
+                    SetForwardState(state, forwardState);
+                    return;
                 }
             }
 
@@ -185,6 +181,8 @@ namespace SimpleU.NetworkChainedStateMachine
             backwardTargetState.BackwardEnter();
             RemoveStateChangeRecord(backwardTargetState);
 
+            Debug.Log("SetBackwardState " + (backwardTargetState == null ? "empty" : backwardTargetState.stateName) + " <- " + state.stateName);
+
             if (backwardTargetState.condition.Value)
             {
                 backwardTargetState.Enter();
@@ -199,10 +197,10 @@ namespace SimpleU.NetworkChainedStateMachine
         {
             //if state's condition met, check state effects for forward movement
             var currentState = GetCurrentState();
-            if (currentState.condition.Value)
+            if (value)
             {
                 var matchedEffect = currentState.effects.FirstOrDefault(x => x == condition);
-                if (matchedEffect == null || !matchedEffect.Value)
+                if (matchedEffect == null)
                     return;
 
                 var forwardPaths = _paths.Where(x => string.Equals(x.sourceName, currentState.stateName));
@@ -215,54 +213,57 @@ namespace SimpleU.NetworkChainedStateMachine
                         return;
                     }
                 }
-
-                return;
             }
-
-            //if state condition is not met, start backward movement
-            SetBackwardState(currentState);
+            else
+            {
+                if (condition == currentState.condition)
+                {
+                    //if state condition is not met, start backward movement
+                    SetBackwardState(currentState);
+                }
+            }
         }
 
         private AState GetCurrentState()
         {
-            var lastRecord = _stateChangeRecords.LastOrDefault();
+            var lastRecord = _stateChangeRecords.Peek();
             return GetStateByName(lastRecord.Value);
         }
 
         public void AddStateChangeRecord(AState sourceState, AState state)
         {
             string sourceStateName = sourceState != null ? sourceState.stateName : "empty";
-            _stateChangeRecords.Add(sourceStateName, state.stateName);
+            _stateChangeRecords.Push(new KeyValuePair<string, string>(sourceStateName, state.stateName));
         }
 
         public void RemoveStateChangeRecord(AState sourceState)
         {
-            _stateChangeRecords.Remove(sourceState.stateName);
+            if (_stateChangeRecords.TryPeek(out var lastRecord)
+                && string.Equals(lastRecord.Value, sourceState.stateName))
+            {
+                _stateChangeRecords.Pop();
+            }
+            else
+            {
+                throw new Exception("Last record not match. Record not removed.");
+            }
         }
 
         private void RemoveLoopedRecord(string targetStateName)
         {
-            string currentTargetState = targetStateName;
-            bool keyFound = false;
-            var deactivateList = new List<AState>();
-            do
+            while (_stateChangeRecords.TryPop(out var lastRecord))
             {
-                keyFound = _stateChangeRecords.ContainsKey(currentTargetState);
-                if (keyFound)
-                {
-                    var state = GetStateByName(currentTargetState);
-                    deactivateList.Add(state);
-
-                    var tempStateName = currentTargetState;
-                    currentTargetState = _stateChangeRecords.GetValueOrDefault(currentTargetState);
-                    _stateChangeRecords.Remove(tempStateName);
-                }
-            } while (keyFound && !string.Equals(currentTargetState, targetStateName));
-
-            for (int i = deactivateList.Count - 1; i >= 0; i--)
-            {
-                var state = deactivateList[i];
+                string currentTargetState = lastRecord.Value;
+                
+                var state = GetStateByName(currentTargetState);
                 state.BackwardExit();
+                
+                Debug.Log($"Remove loop record {lastRecord.Value} -> {lastRecord.Key}");
+                
+                if (string.Equals(lastRecord.Key, targetStateName))
+                {
+                    break;
+                }
             }
         }
 

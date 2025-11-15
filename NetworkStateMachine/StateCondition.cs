@@ -57,7 +57,7 @@ namespace SimpleU.NetworkChainedStateMachine
             _networkVariable.Value = value;
         }
 
-        private void TriggerOnValueChanged(bool previousValue, bool newValue)
+        protected virtual void TriggerOnValueChanged(bool previousValue, bool newValue)
         {
             if (_isDefault || previousValue == newValue)
                 return;
