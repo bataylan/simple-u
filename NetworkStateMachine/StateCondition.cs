@@ -50,7 +50,7 @@ namespace SimpleU.NetworkChainedStateMachine
                 Debug.Log("StateCondition can only be changed by server!");
                 return;
             }
-                
+
             if (value == _networkVariable.Value)
                 return;
 
@@ -71,10 +71,17 @@ namespace SimpleU.NetworkChainedStateMachine
 #if UNITY_EDITOR
         void OnValidate()
         {
-            if (string.IsNullOrEmpty(Key) && TryGetComponent<AState>(out var state))
+            if (string.IsNullOrEmpty(Key))
             {
-                var type = state.GetType();
-                _key = type.Name + "_Condition";
+                if (TryGetComponent<AState>(out var state))
+                {
+                    var type = state.GetType();
+                    _key = type.Name + "_Condition";
+                }
+                else
+                {
+                    _key = gameObject.name + "_Condition";
+                }
             }
         }
 #endif
