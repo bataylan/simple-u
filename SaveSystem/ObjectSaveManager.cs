@@ -11,9 +11,20 @@ namespace SimpleU.SaveSystem
     public class ObjectSaveManager : MonoBehaviour, IObjectIdentifier
     {
         private const string CObject_Save_Dictionary = nameof(ObjectSaveManager) + "_dict";
-
+        
+        /// <summary>
+        /// serialized on scene instance or runtime instance
+        /// </summary>
         [SerializeField] private string id;
+        
+        /// <summary>
+        /// override manual id to prefab permanently
+        /// </summary>
         [SerializeField] private bool isPermanentId;
+        
+        /// <summary>
+        /// all save components on this object, auto filled in editor
+        /// </summary>
         [SerializeField] private Component[] saveComponents;
 
         private SaveManager _saveManager;

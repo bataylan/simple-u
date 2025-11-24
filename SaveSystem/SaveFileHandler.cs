@@ -88,6 +88,41 @@ namespace SimpleU.SaveSystem
                 return null;
         }
 
+        internal void DeleteData(string instanceId, string componentId)
+        {
+            if (string.IsNullOrEmpty(instanceId) || string.IsNullOrEmpty(componentId))
+            {
+                Debug.LogError("Save data with null id!");
+                return;
+            }
+
+            if (_instanceSaves.TryGetValue(instanceId, out var instanceSave)
+                && instanceSave.componentSaves.ContainsKey(componentId))
+            {
+                instanceSave.componentSaves.Remove(componentId);
+            }
+            else
+            {
+                Debug.Log("No save data found to delete for id: " + instanceId + " compId: " + componentId);
+            }
+        }
+
+        internal void DeleteData(string instanceId)
+        {
+            if (string.IsNullOrEmpty(instanceId))
+            {
+                Debug.LogError("Save data with null id!");
+                return;
+            }
+            else if (!_instanceSaves.ContainsKey(instanceId))
+            {
+                Debug.Log("No save data found to delete for id: " + instanceId);
+                return;
+            }
+
+            _instanceSaves.Remove(instanceId);
+        }
+
         internal void DeleteSave()
         {
             File.Delete(_filePath);
@@ -137,6 +172,8 @@ namespace SimpleU.SaveSystem
 
             File.WriteAllText(_filePath, fileString);
         }
+
+
 
         [Serializable]
         private class InstanceSave

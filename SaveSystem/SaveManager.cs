@@ -48,6 +48,13 @@ namespace SimpleU.SaveSystem
 
         public void SaveData(string instanceId, string componentId, object saveData)
             => _saveFileHandler.AddData(instanceId, componentId, saveData);
+        
+        public void DeleteData(string instanceId)
+            => _saveFileHandler.DeleteData(instanceId);
+            
+        public void DeleteData(string instanceId, string componentId)
+            => _saveFileHandler.DeleteData(instanceId, componentId);
+        
             
         public bool TryReadData<T>(string instanceId, string componentId, out T saveData) where T : struct
         {
