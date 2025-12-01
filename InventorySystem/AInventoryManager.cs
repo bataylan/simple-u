@@ -7,7 +7,7 @@ namespace SimpleU.Inventory
 {
     public class AInventoryManager<T> : IInventoryManager where T : IItemAsset
     {
-        public AInventoryManager(int rowCount, int columnCount)
+        public AInventoryManager(int rowCount, int columnCount, int slotCapacity = int.MaxValue)
         {
             RowCount = rowCount;
             ColumnCount = columnCount;
@@ -19,7 +19,7 @@ namespace SimpleU.Inventory
             {
                 for (int j = 0; j < ColumnCount; j++)
                 {
-                    _slots[slotIndex] = new GridSlot<T>(this, slotIndex, i, j);
+                    _slots[slotIndex] = new GridSlot<T>(this, slotIndex, i, j, slotCapacity);
                     slotIndex++;
                 }
             }
