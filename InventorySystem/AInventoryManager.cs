@@ -7,12 +7,15 @@ namespace SimpleU.Inventory
 {
     public class AInventoryManager<T> : IInventoryManager where T : IItemAsset
     {
-        public AInventoryManager(int rowCount, int columnCount, int slotCapacity = int.MaxValue)
+        public AInventoryManager(int rowCount, int columnCount, int slotCapacity = 0)
         {
             RowCount = rowCount;
             ColumnCount = columnCount;
 
             _slots = new GridSlot<T>[SlotCount];
+
+            if (slotCapacity <= 0)
+                slotCapacity = int.MaxValue;
 
             int slotIndex = 0;
             for (int i = 0; i < RowCount; i++)
