@@ -102,6 +102,10 @@ namespace SimpleU.Inventory
             return !HasOriginalItem || (Quantity + count) <= Capacity;
         }
 
+        public bool IsFull() => !HasCapacity(1);
+
+        public int LeftCapacity() => Capacity - Quantity;
+
         public bool GetIsDroppableToTargetSlot(IGridSlot gridSlot)
         {
             if (IsEmpty || gridSlot == this)
