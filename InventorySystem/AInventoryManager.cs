@@ -40,60 +40,30 @@ namespace SimpleU.Inventory
         public bool TryAddItemQuantityToSlot(IItemAsset inventoryItem, int quantity, int slotIndex, out int leftCount)
         {
             leftCount = quantity;
-
-            if (inventoryItem == null || leftCount == 0)
-                return false;
-
-            if (inventoryItem is not T safeItem)
-                return false;
-
             var gridSlot = _slots[slotIndex];
 
-            if (quantity > 0)
-            {
-                if (!CheckSlotEmptyAndSuitable(slotIndex, safeItem.RelativeSlotIndexes) 
-                    && !IsStackable(safeItem, quantity, slotIndex))
-                    return false;
-            }
-            else
-            {
-                if (!gridSlot.HasOriginalItem)
-                    return false;
-            }
+            //old control
+            // if (quantity > 0)
+            // {
+            //     if (!CheckSlotEmptyAndSuitable(slotIndex, safeItem.RelativeSlotIndexes) 
+            //         && !IsStackable(safeItem, quantity, slotIndex))
+            //         return false;
+            // }
+            // else
+            // {
+            //     if (!gridSlot.HasOriginalItem)
+            //         return false;
+            // }
 
-            AddItem(quantity, safeItem, gridSlot, out leftCount);
+            bool canAddItem = CanAddItemQuantity(inventoryItem, quantity, gridSlot, out leftCount,
+                out int completedQuantity);
+
+            if (!canAddItem)
+                return false;
+
+            AddItem_Internal(gridSlot, (T)inventoryItem, completedQuantity);
+
             return leftCount != quantity;
-        }
-
-        public bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity,
-            out int completedQuantity, out IGridSlot gridSlot, bool stackItems = true)
-        {
-            gridSlot = null;
-            leftQuantity = quantity;
-            completedQuantity = 0;
-
-            if (inventoryItem == null || quantity == 0)
-                return false;
-
-            if (inventoryItem is not T safeItem)
-                return false;
-
-            if (!TryGetSlotToAdd(safeItem, quantity, stackItems, out GridSlot<T> slotToAdd))
-                return false;
-
-            if (slotToAdd.IsEmpty)
-            {
-                if (!CheckAddItemToEmptySlot(quantity, slotToAdd, out completedQuantity, out leftQuantity))
-                    return false;
-            }
-            else //try stack
-            {
-                if (!CheckAddItemToStackableSlot(quantity, slotToAdd, out completedQuantity, out leftQuantity))
-                    return false;
-            }
-
-            gridSlot = slotToAdd;
-            return true;
         }
 
         public bool TryAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftCount,
@@ -108,35 +78,6 @@ namespace SimpleU.Inventory
             AddItem_Internal(gridSlot as GridSlot<T>, (T)inventoryItem, completedQuantity);
 
             return leftCount != quantity;
-        }
-
-        protected virtual void AddItem(int quantity, T itemAsset, GridSlot<T> slotToAdd, out int leftQuantity)
-        {
-            leftQuantity = quantity;
-            int completedQuantity = 0;
-
-            if (slotToAdd.IsEmpty)
-            {
-                if (!CheckAddItemToEmptySlot(quantity, slotToAdd, out completedQuantity, out leftQuantity))
-                    return;
-
-                var quantityItem = new QuantityItem<T>
-                {
-                    itemAsset = itemAsset,
-                    quantity = completedQuantity
-                };
-
-                SetItemToGridSlot(slotToAdd, quantityItem);
-            }
-            else //stash
-            {
-                if (!CheckAddItemToStackableSlot(quantity, slotToAdd, out completedQuantity, out leftQuantity))
-                    return;
-
-                slotToAdd.AddQuantity(completedQuantity);
-            }
-
-            OnItemAdd(itemAsset, completedQuantity);
         }
 
         protected virtual void AddItem_Internal(GridSlot<T> slotToAdd, T itemAsset, int completedQuantity)
@@ -157,6 +98,56 @@ namespace SimpleU.Inventory
             }
 
             OnItemAdd(itemAsset, completedQuantity);
+        }
+
+        public bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity,
+            out int completedQuantity, out IGridSlot gridSlot, bool stackItems = true)
+        {
+            gridSlot = null;
+            leftQuantity = quantity;
+            completedQuantity = 0;
+
+            if (inventoryItem == null || quantity == 0)
+                return false;
+
+            if (inventoryItem is not T safeItem)
+                return false;
+
+            if (!TryGetSlotToAdd(safeItem, quantity, stackItems, out GridSlot<T> slotToAdd))
+                return false;
+
+            if (!CanAddItemQuantity(inventoryItem, quantity, slotToAdd, out leftQuantity, out completedQuantity, stackItems))
+                return false;
+
+            gridSlot = slotToAdd;
+            return true;
+        }
+
+        public bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, IGridSlot gridSlot, out int leftQuantity,
+            out int completedQuantity, bool stackItems = true)
+        {
+            leftQuantity = quantity;
+            completedQuantity = 0;
+
+            if (inventoryItem == null || quantity == 0)
+                return false;
+
+            if (inventoryItem is not T safeItem)
+                return false;
+
+            var slotToAdd = gridSlot as GridSlot<T>;
+            if (slotToAdd.IsEmpty)
+            {
+                if (!CheckAddItemToEmptySlot(quantity, slotToAdd, out completedQuantity, out leftQuantity))
+                    return false;
+            }
+            else //try stack
+            {
+                if (!CheckAddItemToStackableSlot(quantity, slotToAdd, out completedQuantity, out leftQuantity))
+                    return false;
+            }
+
+            return true;
         }
 
         private bool CheckAddItemToEmptySlot(int quantity, GridSlot<T> slotToAdd,
