@@ -168,7 +168,7 @@ namespace SimpleU.NetworkChainedStateMachine
         private void SetBackwardState(AState state)
         {
             //try find last record
-            var lastRecord = _stateChangeRecords.LastOrDefault();
+            var lastRecord = _stateChangeRecords.Peek();
             if (!string.Equals(lastRecord.Value, state.stateName))
             {
                 throw new Exception("SetBackwardState state is not last active state!");
@@ -179,7 +179,7 @@ namespace SimpleU.NetworkChainedStateMachine
             //get source state and remove from records
             var backwardTargetState = GetStateByName(lastRecord.Key);
             backwardTargetState.BackwardEnter();
-            RemoveStateChangeRecord(backwardTargetState);
+            RemoveStateChangeRecord(state);
 
             Debug.Log("SetBackwardState " + (backwardTargetState == null ? "empty" : backwardTargetState.stateName) + " <- " + state.stateName);
 
