@@ -14,7 +14,6 @@ namespace SimpleU.Utility
         public void FetchAllItems()
         {
             string[] guids = UnityEditor.AssetDatabase.FindAssets("t:Prefab", new string[] { parentFolder });
-
             var list = new List<T>();
 
             for (int i = 0; i < guids.Length; i++)
@@ -34,7 +33,7 @@ namespace SimpleU.Utility
 
         void OnValidate()
         {
-            if (Application.isPlaying)
+            if (Application.isPlaying || UnityEditor.EditorApplication.isUpdating)
                 return;
 
             FetchAllItems();
