@@ -61,6 +61,12 @@ namespace SimpleU.NetworkChainedStateMachine
             Exit();
         }
 
+        void OnDisable()
+        {
+            if (_isActive)
+                Exit();
+        }
+
 #if UNITY_EDITOR
         void OnDrawGizmos()
         {
