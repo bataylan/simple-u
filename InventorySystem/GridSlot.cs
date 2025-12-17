@@ -14,6 +14,7 @@ namespace SimpleU.Inventory
         public int ColumnIndex => _columnIndex;
         public bool IsRelativeSlot => !IsEmpty && _originalSlotIndex >= 0;
         public IInventoryManager InventoryManager => _inventoryManager;
+        public bool IsFull => Quantity >= Capacity;
         public int Quantity
         {
             get => _quantityItem != null ? _quantityItem.Quantity : 0;
@@ -99,10 +100,8 @@ namespace SimpleU.Inventory
         
         public bool HasCapacity(int count)
         {
-            return !HasOriginalItem || (Quantity + count) <= Capacity;
+            return (Quantity + count) <= Capacity;
         }
-
-        public bool IsFull() => !HasCapacity(1);
 
         public int LeftCapacity() => Capacity - Quantity;
 

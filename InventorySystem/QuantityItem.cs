@@ -13,7 +13,7 @@ namespace SimpleU.Inventory
     
     public interface IQuantityItem
     {
-        bool Viable { get; }
+        bool Valid { get; }
         IItemAsset ItemAsset { get; }
         int Quantity { get; }
 
@@ -28,7 +28,7 @@ namespace SimpleU.Inventory
 
         public T ItemAsset => itemAsset;
         public int Quantity => quantity;
-        public bool Viable => itemAsset != null && quantity > 0;
+        public bool Valid => itemAsset != null && quantity > 0;
 
         IItemAsset IQuantityItem.ItemAsset => ItemAsset;
 
