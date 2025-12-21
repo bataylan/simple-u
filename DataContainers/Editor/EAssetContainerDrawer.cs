@@ -141,12 +141,33 @@ namespace SimpleU.Editors.DataContainer
                 }
             }
 
+            if (_reorderableList.selectedIndices != null && _reorderableList.selectedIndices.Count > 0
+                && GUILayout.Button("Reformat selected asset names"))
+            {
+                for (int i = 0; i < _reorderableList.selectedIndices.Count; i++)
+                {
+                    ReformatSelectedName(i);
+                }
+            }
+
             if (EditorGUI.EndChangeCheck())
             {
                 _serializedObject.ApplyModifiedProperties();
                 EditorUtility.SetDirty(_serializedObject.targetObject);
                 AssetDatabase.SaveAssets();
             }
+        }
+
+        private bool ReformatSelectedName(int index)
+        {
+            _selectedIndexForRename = _reorderableList.selectedIndices[index];
+            var element = _arrayProperty.GetArrayElementAtIndex(_selectedIndexForRename);
+            if (element == null)
+                return false;
+
+            string customItemName = GetCustomItemName(element, _selectedIndexForRename);
+            ReceiveItemName(customItemName);
+            return true;
         }
 
         private void ReceiveItemName(string customItemName)
