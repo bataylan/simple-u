@@ -31,6 +31,18 @@ namespace SimpleU.Context
         }
         private UpdateManager _updateManager;
         
+        public UpdateManager FixedUpdateManager
+        {
+            get
+            {
+                if (_fixedUpdateManager == null)
+                    _fixedUpdateManager = new UpdateManager();
+
+                return _fixedUpdateManager;
+            }
+        }
+        private UpdateManager _fixedUpdateManager;
+        
         public EventBusManager EventBusManager
         {
             get
@@ -43,6 +55,7 @@ namespace SimpleU.Context
         }
         private EventBusManager _eventBusManager;
         protected UpdateManagerBehaviour _updateBehaviour;
+        protected FixedUpdateManagerBehaviour _fixedUpdateBehaviour;
 
         internal virtual void EnsureInit(GameObject referenceObject, ScriptableObject[] extraScriptableObjects, GameObject[] extraPrefabs)
         {
@@ -57,6 +70,8 @@ namespace SimpleU.Context
 
             _updateBehaviour = referenceObject.AddComponent<UpdateManagerBehaviour>();
             _updateBehaviour.Init(UpdateManager);
+            _fixedUpdateBehaviour = referenceObject.AddComponent<FixedUpdateManagerBehaviour>();
+            _fixedUpdateBehaviour.Init(FixedUpdateManager);
         }
 
         private void RegisterInitialExtras(ScriptableObject[] extraScriptableObjects)
@@ -100,6 +115,21 @@ namespace SimpleU.Context
             }
 
             void Update()
+            {
+                _updateManager.Update();
+            }
+        }
+        
+        public class FixedUpdateManagerBehaviour : MonoBehaviour
+        {
+            private UpdateManager _updateManager;
+
+            public void Init(UpdateManager updateManager)
+            {
+                _updateManager = updateManager;
+            }
+
+            void FixedUpdate()
             {
                 _updateManager.Update();
             }
