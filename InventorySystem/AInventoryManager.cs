@@ -236,17 +236,18 @@ namespace SimpleU.Inventory
         {
             if (itemAsset == null)
                 return 0;
-                
+
+            int quantity = 0;
             for (int i = 0; i < _slots.Length; i++)
             {
                 var slot = _slots[i];
                 if (slot.HasOriginalItem && slot.ItemAsset.Equals(itemAsset))
                 {
-                    return slot.Quantity;
+                    quantity += slot.Quantity;
                 }
             }
 
-            return 0;
+            return quantity;
         }
 
         private bool TryGetSlotToAdd(T itemAsset, int quantity, bool stackItems, out GridSlot<T> slotToAdd)
