@@ -11,7 +11,7 @@ namespace SimpleU.SaveSystem
     /// namespace changes broke save data since type parsed from save
     /// lists are supported
     /// </summary>
-    public class SaveFileHandler
+    public class SaveFileHandler : IDisposable
     {
         private const string CFileExtension = ".dat";
 
@@ -47,7 +47,7 @@ namespace SimpleU.SaveSystem
             ReadSaveFile();
         }
 
-        internal void AddData(string id, string componentId, object value)
+        public void AddData(string id, string componentId, object value)
         {
             if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(componentId))
             {
@@ -65,7 +65,7 @@ namespace SimpleU.SaveSystem
             instanceSave.componentSaves[componentId] = componentSave;
         }
 
-        internal object ReadComponentData<T>(string id, string componentId)
+        public object ReadComponentData<T>(string id, string componentId)
         {
             if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(componentId))
             {
@@ -80,7 +80,7 @@ namespace SimpleU.SaveSystem
                 return null;
         }
 
-        internal List<T?> ReadObjectData<T>(string id) where T : struct
+        public List<T?> ReadObjectData<T>(string id) where T : struct
         {
             if (_instanceSaves.TryGetValue(id, out var instanceSave))
                 return instanceSave.componentSaves.Select(x=>x.Value.value as T?).ToList();
@@ -88,7 +88,7 @@ namespace SimpleU.SaveSystem
                 return null;
         }
 
-        internal void DeleteData(string instanceId, string componentId)
+        public void DeleteData(string instanceId, string componentId)
         {
             if (string.IsNullOrEmpty(instanceId) || string.IsNullOrEmpty(componentId))
             {
@@ -107,7 +107,7 @@ namespace SimpleU.SaveSystem
             }
         }
 
-        internal void DeleteData(string instanceId)
+        public void DeleteData(string instanceId)
         {
             if (string.IsNullOrEmpty(instanceId))
             {
@@ -123,7 +123,7 @@ namespace SimpleU.SaveSystem
             _instanceSaves.Remove(instanceId);
         }
 
-        internal void DeleteSave()
+        public void DeleteSave()
         {
             File.Delete(_filePath);
         }
@@ -172,11 +172,19 @@ namespace SimpleU.SaveSystem
 
             File.WriteAllText(_filePath, fileString);
         }
-
-
+        
+        public void Dispose()
+        {
+            var instanceSaveEn = _instanceSaves.GetEnumerator();
+            while (instanceSaveEn.MoveNext())
+            {
+                instanceSaveEn.Current.Value.Dispose();
+            }
+            _instanceSaves.Clear();
+        }
 
         [Serializable]
-        private class InstanceSave
+        private class InstanceSave : IDisposable
         {
             public const string CStart = "<instance-start>";
             public const string CEnd = "<instance-end>";
@@ -238,7 +246,10 @@ namespace SimpleU.SaveSystem
                 return true;
             }
 
-
+            public void Dispose()
+            {
+                componentSaves.Clear();
+            }
         }
 
         [Serializable]

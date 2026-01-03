@@ -31,6 +31,11 @@ namespace SimpleU.SaveSystem
         {
             return Path.Combine(Application.persistentDataPath, "Saves");
         }
+        
+        public static SaveFileHandler GetSaveFileHandler()
+        {
+            return new SaveFileHandler(GetFolderPath(), "progress");
+        }
 
         public SaveManager(string folderPath)
         {
