@@ -32,7 +32,7 @@ namespace SimpleU.Tests.Inventory
         private void AddItem()
         {
             int addQuantity = 1;
-            bool result = _inventoryManager.TryAddItemQuantity(_testItem, addQuantity, out int leftCount,
+            bool result = _inventoryManager.TryAddItemToSingleSlot(_testItem, addQuantity, out int leftCount,
                 out IGridSlot gridSlot);
             Assert.IsTrue(result);
             Assert.AreEqual(0, leftCount);
@@ -52,7 +52,7 @@ namespace SimpleU.Tests.Inventory
         private void RemoveItem()
         {
             int quantity = _inventoryManager.GetQuantity(_testItem);
-            bool removeResult = _inventoryManager.TryAddItemQuantity(_testItem, -1, out int leftCount,
+            bool removeResult = _inventoryManager.TryAddItemToSingleSlot(_testItem, -1, out int leftCount,
                 out IGridSlot gridSlot);
             Assert.IsTrue(removeResult);
             Assert.AreEqual(0, leftCount);

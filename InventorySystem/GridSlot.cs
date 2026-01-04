@@ -30,6 +30,9 @@ namespace SimpleU.Inventory
                 }
                 else
                 {
+                    if (_quantityItem == null)
+                        throw new Exception("QuantityItem is null but trying to set quantity!");
+                        
                     _quantityItem.SetQuantity(safeQuantity);
                 }
 

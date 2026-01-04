@@ -66,10 +66,10 @@ namespace SimpleU.Inventory
             return leftCount != quantity;
         }
 
-        public bool TryAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftCount,
+        public bool TryAddItemToSingleSlot(IItemAsset inventoryItem, int quantity, out int leftCount,
             out IGridSlot gridSlot, bool stackItems = true)
         {
-            bool canAddItem = CanAddItemQuantity(inventoryItem, quantity, out leftCount, out int completedQuantity,
+            bool canAddItem = CanAddItemFromSingleSlot(inventoryItem, quantity, out leftCount, out int completedQuantity,
                 out gridSlot, stackItems);
 
             if (!canAddItem)
@@ -78,6 +78,104 @@ namespace SimpleU.Inventory
             AddItem_Internal(gridSlot as GridSlot<T>, (T)inventoryItem, completedQuantity);
 
             return leftCount != quantity;
+        }
+
+        public bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, bool stash, out int leftQuantity)
+        {
+            leftQuantity = quantity;
+
+            if (inventoryItem == null || quantity == 0)
+                return false;
+
+            if (inventoryItem is not T safeItem)
+                return false;
+
+            CheckAddItem_Internal(safeItem, quantity, stash, false, out leftQuantity);
+            return leftQuantity != quantity;
+        }
+
+        public bool TryAddItemQuantity(IItemAsset inventoryItem, int quantity, bool stash, out int leftQuantity)
+        {
+            leftQuantity = quantity;
+
+            if (inventoryItem == null || quantity == 0)
+                return false;
+
+            if (inventoryItem is not T safeItem)
+                return false;
+
+            CheckAddItem_Internal(safeItem, quantity, stash, true, out leftQuantity);
+            return leftQuantity != quantity;
+        }
+
+        protected virtual void CheckAddItem_Internal(T itemAsset, int quantity, bool stashed, bool doAdd,
+            out int leftQuantity)
+        {
+            leftQuantity = quantity;
+            bool isAdd = quantity > 0;
+
+            //find same item owner slots
+            //ignore stash if removing
+            if (stashed || !isAdd)
+            {
+                for (int i = 0; i < Slots.Length; i++)
+                {
+                    var slot = _slots[i];
+                    if (!slot.HasOriginalItem)
+                        continue;
+
+                    if (!slot.ItemAsset.Equals(itemAsset))
+                        continue;
+
+                    int slotLeftCapacity = isAdd ? slot.LeftCapacity() : slot.Quantity;
+                    if (slotLeftCapacity != 0)
+                    {
+                        int addedQuantity = 0;
+                        if (!isAdd)
+                            addedQuantity = -Mathf.Min(Mathf.Abs(leftQuantity), slotLeftCapacity);
+                        else
+                            addedQuantity = Mathf.Min(leftQuantity, slotLeftCapacity);
+                            
+                        leftQuantity -= addedQuantity;
+
+                        if (doAdd)
+                        {
+                            slot.AddQuantity(addedQuantity);
+                        }
+                    }
+
+                    if (leftQuantity == 0)
+                        break;
+                }
+
+                if (leftQuantity == 0 || !isAdd)
+                    return;
+
+                //do add on empty slots
+                for (int i = 0; i < _slots.Length; i++)
+                {
+                    var slot = _slots[i];
+                    if (slot.HasOriginalItem)
+                        continue;
+
+                    int usedCapacity = Mathf.Min(leftQuantity, slot.Capacity);
+                    leftQuantity -= usedCapacity;
+
+                    if (doAdd)
+                    {
+                        var quantityITem = new QuantityItem<T>()
+                        {
+                            itemAsset = itemAsset,
+                            quantity = usedCapacity
+                        };
+
+                        SetItemToGridSlot(slot, quantityITem);
+                    }
+
+                    if (leftQuantity == 0)
+                        break;
+                }
+            }
         }
 
         protected virtual void AddItem_Internal(GridSlot<T> slotToAdd, T itemAsset, int completedQuantity)
@@ -100,7 +198,7 @@ namespace SimpleU.Inventory
             OnItemAdd(itemAsset, completedQuantity);
         }
 
-        public bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity,
+        public bool CanAddItemFromSingleSlot(IItemAsset inventoryItem, int quantity, out int leftQuantity,
             out int completedQuantity, out IGridSlot gridSlot, bool stackItems = true)
         {
             gridSlot = null;
@@ -362,9 +460,11 @@ namespace SimpleU.Inventory
         int TryGetSlotIndex(IItemAsset item);
         bool HasEnoughQuantity(IItemAsset itemAsset, int quantity);
         int GetQuantity(IItemAsset itemAsset);
-        bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity,
+        bool CanAddItemFromSingleSlot(IItemAsset inventoryItem, int quantity, out int leftQuantity,
             out int completedQuantity, out IGridSlot gridSlot, bool stackItems = true);
-        bool TryAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftCount, out IGridSlot gridSlot, bool stackItems = true);
+        bool TryAddItemToSingleSlot(IItemAsset inventoryItem, int quantity, out int leftCount, out IGridSlot gridSlot, bool stackItems = true);
         bool TryAddItemQuantityToSlot(IItemAsset item, int quantity, int slotIndex, out int leftQuantity);
+        bool TryAddItemQuantity(IItemAsset inventoryItem, int quantity, bool stash, out int leftQuantity);
+        bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, bool stash, out int leftQuantity);
     }
 }
