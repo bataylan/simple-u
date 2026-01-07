@@ -17,6 +17,7 @@ namespace SimpleU.Editors.DataContainer
 
         public override void OnInspectorGUI()
         {
+            base.OnInspectorGUI();
             _drawer.DrawInspectorGUI();
         }
     }
