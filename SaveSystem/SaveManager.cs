@@ -38,7 +38,7 @@ namespace SimpleU.SaveSystem
             return new SaveFileHandler(GetFolderPath(), GetSaveFileName());
         }
 
-        private static string GetSaveFileName()
+        public static string GetSaveFileName()
         {
             return PlayerPrefs.GetString(CSaveFileNameKey, "progress");
         }
@@ -51,17 +51,21 @@ namespace SimpleU.SaveSystem
         public void Subscribe(Action<SaveManager> onSave) { _saveTrigger += onSave; }
         public void Unsubscribe(Action<SaveManager> onSave) { _saveTrigger -= onSave; }
 
-        public void SetFileName(string fileName)
+        public bool TrySetFileName(string fileName, bool copyLastSave)
         {
-            bool saveFileCopied = _saveFileHandler.TryCopyFileToNewPath(fileName);
-            if (!saveFileCopied)
-                return;
-                
+            if (copyLastSave)
+            {
+                bool saveFileCopied = _saveFileHandler.TryCopyFileToNewPath(fileName);
+                if (!saveFileCopied)
+                    return false;
+            }
+
             PlayerPrefs.SetString(CSaveFileNameKey, fileName);
             
             _saveFileHandler.Dispose();
             _saveFileHandler = null;
             SetFileHandler();
+            return true;
         }
         
         private void SetFileHandler()
@@ -70,6 +74,34 @@ namespace SimpleU.SaveSystem
             string fileName = GetSaveFileName();
             _saveFileHandler = new SaveFileHandler(folderPath, fileName);
             Debug.Log("Save manager set with path: " + folderPath + " and file name: " + fileName);
+        }
+
+        public List<SaveFileInfo> GetSaveFileInfos()
+        {
+            string folderPath = GetFolderPath();
+            var filePaths = Directory.GetFiles(folderPath);
+            var saveFileInfos = new List<SaveFileInfo>();
+            foreach (var filePath in filePaths)
+            {
+                var fileInfo = new FileInfo(filePath);
+                saveFileInfos.Add(new SaveFileInfo
+                {
+                    FileName = fileInfo.Name,
+                    FileFolder = fileInfo.DirectoryName,
+                    FilePath = filePath,
+                    LastWriteTime = fileInfo.LastWriteTime
+                });
+            }
+
+            return saveFileInfos;
+        }
+
+        public struct SaveFileInfo
+        {
+            public string FileName;
+            public string FileFolder;
+            public string FilePath;
+            public DateTime LastWriteTime;
         }
 
         public void SaveAll()
