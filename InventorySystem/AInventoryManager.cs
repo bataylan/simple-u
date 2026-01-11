@@ -40,6 +40,9 @@ namespace SimpleU.Inventory
         public bool TryAddItemQuantityToSlot(IItemAsset inventoryItem, int quantity, int slotIndex, out int leftCount)
         {
             leftCount = quantity;
+            if (slotIndex >= SlotCount)
+                return false;
+                
             var gridSlot = _slots[slotIndex];
 
             //old control
