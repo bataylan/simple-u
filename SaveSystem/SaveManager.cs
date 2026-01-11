@@ -10,6 +10,8 @@ namespace SimpleU.SaveSystem
     public class SaveManager
     {
         private const string CKey = nameof(SaveManager);
+        private const string CSaveFileNameKey = "save_file_name_k";
+
         public bool SaveInstantiating { get; set; }
 
         private Action<SaveManager> _saveTrigger;
@@ -20,10 +22,9 @@ namespace SimpleU.SaveSystem
             if (LevelContext.Get().ExtraData.TryGetExtra(CKey, out SaveManager instance))
                 return instance;
 
-            string folderPath = GetFolderPath();
-            instance = new SaveManager(folderPath);
+            instance = new SaveManager();
             LevelContext.Get().ExtraData.SetExtra(CKey, instance);
-            Debug.Log("Save manager set with path: " + folderPath);
+            
             return instance;
         }
         
@@ -34,16 +35,42 @@ namespace SimpleU.SaveSystem
         
         public static SaveFileHandler GetSaveFileHandler()
         {
-            return new SaveFileHandler(GetFolderPath(), "progress");
+            return new SaveFileHandler(GetFolderPath(), GetSaveFileName());
         }
 
-        public SaveManager(string folderPath)
+        private static string GetSaveFileName()
         {
-            _saveFileHandler = new SaveFileHandler(folderPath, "progress");
+            return PlayerPrefs.GetString(CSaveFileNameKey, "progress");
+        }
+
+        private SaveManager()
+        {
+            SetFileHandler();
         }
 
         public void Subscribe(Action<SaveManager> onSave) { _saveTrigger += onSave; }
         public void Unsubscribe(Action<SaveManager> onSave) { _saveTrigger -= onSave; }
+
+        public void SetFileName(string fileName)
+        {
+            bool saveFileCopied = _saveFileHandler.TryCopyFileToNewPath(fileName);
+            if (!saveFileCopied)
+                return;
+                
+            PlayerPrefs.SetString(CSaveFileNameKey, fileName);
+            
+            _saveFileHandler.Dispose();
+            _saveFileHandler = null;
+            SetFileHandler();
+        }
+        
+        private void SetFileHandler()
+        {
+            string folderPath = GetFolderPath();
+            string fileName = GetSaveFileName();
+            _saveFileHandler = new SaveFileHandler(folderPath, fileName);
+            Debug.Log("Save manager set with path: " + folderPath + " and file name: " + fileName);
+        }
 
         public void SaveAll()
         {
