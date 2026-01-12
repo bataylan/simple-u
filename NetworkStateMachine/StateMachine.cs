@@ -128,7 +128,24 @@ namespace SimpleU.NetworkChainedStateMachine
         //WARNING! Recursive function
         private void SetForwardState(AState sourceState, AState state)
         {
+            //TODO Temporary fix that should be removed, inactive state should not set forward state
+            if (_stateChangeRecords.Count > 0)
+            {
+                var lastRecord = _stateChangeRecords.Peek();
+                var lastState = GetStateByName(lastRecord.Value);
+                if (lastState != sourceState)
+                {
+                    Debug.LogError("Last state not match! " + lastState.stateName + " != " + sourceState.stateName);
+                    return;
+                }
+            }
+
             AddStateChangeRecord(sourceState, state);
+
+            if (sourceState == state)
+            {
+                Debug.LogError("Source and target state are the same!");
+            }
 
             Debug.Log("SetForwardState " + (sourceState == null ? "empty" : sourceState.stateName) + " -> " + state.stateName);
             if (sourceState)
@@ -154,8 +171,15 @@ namespace SimpleU.NetworkChainedStateMachine
                 if (forwardState.condition.Value)
                 {
                     bool isLoop = forwardState.IsActive;
+
+                    if (isLoop)
+                    {
+                        Debug.LogError("Loop Detected?");
+                    }
+
                     state.ForwardExit();
                     SetForwardState(state, forwardState);
+
                     return;
                 }
             }
@@ -209,6 +233,10 @@ namespace SimpleU.NetworkChainedStateMachine
                     var targetState = GetStateByName(p.targetName);
                     if (targetState.condition == matchedEffect)
                     {
+                        if (targetState.IsActive)
+                        {
+                            Debug.LogError("Loop Detected?");
+                        }
                         SetForwardState(currentState, targetState);
                         return;
                     }
