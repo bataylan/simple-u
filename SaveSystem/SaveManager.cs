@@ -38,9 +38,14 @@ namespace SimpleU.SaveSystem
             return new SaveFileHandler(GetFolderPath(), GetSaveFileName());
         }
 
-        public static string GetSaveFileName()
+        private static string GetSaveFileName()
         {
             return PlayerPrefs.GetString(CSaveFileNameKey, "progress");
+        }
+        
+        private static string GetSaveFileFullPath()
+        {
+            return PlayerPrefs.GetString(CSaveFileNameKey, "progress") + ".dat";
         }
 
         private SaveManager()
@@ -74,6 +79,19 @@ namespace SimpleU.SaveSystem
             string fileName = GetSaveFileName();
             _saveFileHandler = new SaveFileHandler(folderPath, fileName);
             Debug.Log("Save manager set with path: " + folderPath + " and file name: " + fileName);
+        }
+        
+        public SaveFileInfo GetCurrentSaveFileInfo()
+        {
+            string folderPath = GetFolderPath();
+            var fileInfo = new FileInfo(Path.Combine(folderPath, GetSaveFileFullPath()));
+            return new SaveFileInfo
+            {
+                FileName = fileInfo.Name,
+                FileFolder = fileInfo.DirectoryName,
+                FilePath = fileInfo.FullName,
+                LastWriteTime = fileInfo.LastWriteTime
+            };
         }
 
         public List<SaveFileInfo> GetSaveFileInfos()
