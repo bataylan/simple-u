@@ -45,7 +45,7 @@ namespace SimpleU.SaveSystem
         
         private static string GetSaveFileFullPath()
         {
-            return PlayerPrefs.GetString(CSaveFileNameKey, "progress") + ".dat";
+            return PlayerPrefs.GetString(CSaveFileNameKey, "progress") + SaveFileHandler.CFileExtension;
         }
 
         private SaveManager()
