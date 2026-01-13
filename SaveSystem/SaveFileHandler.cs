@@ -30,7 +30,8 @@ namespace SimpleU.SaveSystem
                 Debug.Log("Save folder created: " + _folderPath);
             }
 
-            _filePath = Path.Combine(_folderPath, fileName + CFileExtension);
+            fileName = EnsureFileExtension(fileName);
+            _filePath = Path.Combine(_folderPath, fileName);
             if (!File.Exists(_filePath))
             {
                 File.Create(_filePath).Close();
@@ -48,7 +49,8 @@ namespace SimpleU.SaveSystem
 
         public bool TryCopyFileToNewPath(string fileName)
         {
-            string newFilePath = Path.Combine(_folderPath, fileName + CFileExtension);
+            fileName = EnsureFileExtension(fileName);
+            string newFilePath = Path.Combine(_folderPath, fileName);
             if (string.IsNullOrEmpty(_filePath) || !File.Exists(_filePath) || File.Exists(newFilePath))
             {
                 Debug.LogError("Save file not copied!");
@@ -57,6 +59,14 @@ namespace SimpleU.SaveSystem
 
             File.Copy(_filePath, newFilePath);
             return true;
+        }
+        
+        private string EnsureFileExtension(string fileName)
+        {
+            if (fileName.Contains(CFileExtension))
+                return fileName;
+                
+            return fileName + CFileExtension;
         }
 
         public void AddData(string id, string componentId, object value)

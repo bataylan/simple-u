@@ -65,6 +65,9 @@ namespace SimpleU.SaveSystem
                     return false;
             }
 
+            if (fileName.Contains(SaveFileHandler.CFileExtension))
+                fileName = fileName.Substring(0, fileName.Length - SaveFileHandler.CFileExtension.Length);
+                
             PlayerPrefs.SetString(CSaveFileNameKey, fileName);
             
             _saveFileHandler.Dispose();
