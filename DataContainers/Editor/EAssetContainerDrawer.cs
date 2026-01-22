@@ -192,7 +192,6 @@ namespace SimpleU.Editors.DataContainer
 
             string customItemName = GetCustomItemName(element, index);
             EditorGUI.LabelField(rect, customItemName);
-            Debug.Log($"CustomItemName: {customItemName}");
         }
 
         private string GetCustomItemName(SerializedProperty element, int index)
