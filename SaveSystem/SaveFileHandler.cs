@@ -304,10 +304,15 @@ namespace SimpleU.SaveSystem
 
             public static string FormatJson(string id, object value)
             {
+                var valueType = value.GetType();
+                string typeString = JsonConvert.SerializeObject(valueType, JsonSerializerSettings);
+                string dataString = valueType.IsPrimitive ? JsonConvert.SerializeObject(value)
+                    : JsonUtility.ToJson(value);
+
                 return CStart + Environment.NewLine
                 + CIdPrefix + id + CIdSuffix + Environment.NewLine
-                + CTypePrefix + JsonConvert.SerializeObject(value.GetType(), JsonSerializerSettings) + CTypeSuffix
-                + CDataPrefix + JsonUtility.ToJson(value) + CDataSuffix + Environment.NewLine
+                + CTypePrefix + typeString + CTypeSuffix
+                + CDataPrefix + dataString + CDataSuffix + Environment.NewLine
                 + CEnd;
             }
 
@@ -342,7 +347,14 @@ namespace SimpleU.SaveSystem
                 componentSave.type = JsonConvert.DeserializeObject<Type>(typeJson, JsonSerializerSettings);
 
                 string dataJson = rawString.Substring(dataStartIndex, dataEndIndex - dataStartIndex);
-                componentSave.value = JsonUtility.FromJson(dataJson, componentSave.type);
+                object deserializedValue = componentSave.type.IsPrimitive ? 
+                    JsonConvert.DeserializeObject(dataJson, JsonSerializerSettings)
+                    : JsonUtility.FromJson(dataJson, componentSave.type);
+                componentSave.value = componentSave.type.IsPrimitive ? 
+                    Convert.ChangeType(deserializedValue, componentSave.type)
+                    : deserializedValue;
+                    
+
                 return true;
             }
         }
