@@ -102,10 +102,10 @@ namespace SimpleU.SaveSystem
                 return null;
         }
 
-        public List<T?> ReadObjectData<T>(string id) where T : struct
+        public List<T> ReadObjectData<T>(string id)
         {
             if (_instanceSaves.TryGetValue(id, out var instanceSave))
-                return instanceSave.componentSaves.Select(x=>x.Value.value as T?).ToList();
+                return instanceSave.componentSaves.Select(x => x.Value.value is T typedValue ? typedValue : default).ToList();
             else
                 return null;
         }

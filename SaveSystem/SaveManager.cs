@@ -139,17 +139,23 @@ namespace SimpleU.SaveSystem
             
         public void DeleteData(string instanceId, string componentId)
             => _saveFileHandler.DeleteData(instanceId, componentId);
-        
-            
-        public bool TryReadData<T>(string instanceId, string componentId, out T saveData) where T : struct
+
+
+        public bool TryReadData<T>(string instanceId, string componentId, out T saveData, T defaultValue = default)
         {
-            var data = _saveFileHandler.ReadComponentData<T>(instanceId, componentId) as T?;
-            saveData = data.HasValue ? data.Value : default(T);
-            return data.HasValue;
+            var data = _saveFileHandler.ReadComponentData<T>(instanceId, componentId);
+            if (data is not T typedData)
+            {
+                saveData = defaultValue;
+                return false;
+            }
+                
+            saveData = typedData;
+            return true;
         }
         
         
-        public bool TryReadObjectData<T>(string instanceId, out List<T?> saveData) where T : struct
+        public bool TryReadObjectData<T>(string instanceId, out List<T> saveData)
         {
             saveData = _saveFileHandler.ReadObjectData<T>(instanceId);
             return saveData != null;
