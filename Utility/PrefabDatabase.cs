@@ -11,7 +11,7 @@ namespace SimpleU.Utility
         public Map prefabs;
         
 #if UNITY_EDITOR
-        public void FetchAllItems()
+        public virtual void FetchAllItems_Editor()
         {
             string[] guids = UnityEditor.AssetDatabase.FindAssets("t:Prefab", new string[] { parentFolder });
             var list = new List<T>();
@@ -36,7 +36,7 @@ namespace SimpleU.Utility
             if (Application.isPlaying || UnityEditor.EditorApplication.isUpdating)
                 return;
 
-            FetchAllItems();
+            FetchAllItems_Editor();
         }
 #endif
         

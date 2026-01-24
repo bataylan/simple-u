@@ -20,7 +20,7 @@ namespace SimpleU.Utility
 
             if (GUILayout.Button("Fetch all items"))
             {
-                _target.FetchAllItems();
+                _target.FetchAllItems_Editor();
             }
 
             IdentifiedSetEditorHelper.DrawIdentifiedSet(_target.prefabs);
