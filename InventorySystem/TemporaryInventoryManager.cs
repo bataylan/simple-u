@@ -12,6 +12,32 @@ namespace SimpleU.Inventory
         private IGridSlot[] _slots;
         public IGridSlot[] GridSlots => _slots;
 
+        public TemporaryInventoryManager(IInventoryManager inventoryManager)
+        {
+            RowCount = inventoryManager.RowCount;
+            ColumnCount = inventoryManager.ColumnCount;
+
+            _slots = new IGridSlot[ColumnCount * RowCount];
+
+            int slotIndex = 0;
+            for (int i = 0; i < RowCount; i++)
+            {
+                for (int j = 0; j < ColumnCount; j++)
+                {
+                    var sourceGridSlot = inventoryManager.GridSlots[slotIndex];
+                    var gridSlot = new TemporaryGrid<T>(this, slotIndex, i, j, sourceGridSlot.Capacity);
+                    
+                    if (!sourceGridSlot.IsEmpty)
+                    {
+                        gridSlot.SetItem(sourceGridSlot.ItemAsset, sourceGridSlot.Quantity, sourceGridSlot.OriginalSlotIndex);
+                    }
+                    
+                    _slots[slotIndex] = gridSlot;
+                    slotIndex++;
+                }
+            }
+        }
+
         public TemporaryInventoryManager(int rowCount, int columnCount, int slotCapacity = 0)
         {
             RowCount = rowCount;
@@ -89,7 +115,7 @@ namespace SimpleU.Inventory
         public int Quantity
         {
             get => _quantityItem != null ? _quantityItem.Quantity : 0;
-            private set => GridSlotService<T>.SetQuantity(this, value);
+            private set => GridSlotService<T>.SetQuantity(ref this, value);
         }
         public bool IsEmpty => ItemAsset == null || Quantity <= 0;
         public bool HasOriginalItem => !IsEmpty && !IsRelativeSlot;

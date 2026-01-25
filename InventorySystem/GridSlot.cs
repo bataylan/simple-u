@@ -102,6 +102,18 @@ namespace SimpleU.Inventory
     {
         public static void SetQuantity(IServicableGridSlot<T> gridSlot, int value)
         {
+            SetQuantityInternal(ref gridSlot, value);
+        }
+
+        public static void SetQuantity<TSlot>(ref TSlot slot, int value)
+            where TSlot : struct, IServicableGridSlot<T>
+        {
+            SetQuantityInternal(ref slot, value);
+        }
+
+        private static void SetQuantityInternal<TSlot>(ref TSlot gridSlot, int value)
+            where TSlot : IServicableGridSlot<T>
+        {
             int safeQuantity = Mathf.Max(value, 0);
             if (safeQuantity == gridSlot.Quantity)
                 return;
@@ -120,7 +132,7 @@ namespace SimpleU.Inventory
 
             gridSlot.OnQuantityChange?.Invoke(gridSlot);
         }
-        
+
         public static bool GetIsDroppableToTargetSlot(IServicableGridSlot<T> gridSlot, IGridSlot targetSlot)
         {
             if (gridSlot.IsEmpty || targetSlot == gridSlot)
