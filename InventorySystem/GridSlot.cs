@@ -163,7 +163,20 @@ namespace SimpleU.Inventory
             return gridSlot.Capacity - gridSlot.Quantity;
         }
 
-        public static void SetItem(IServicableGridSlot<T> gridSlot, IItemAsset itemAsset, int quantity, int originalSlotIndex = -1)
+        public static void SetItem<TSlot>(ref TSlot gridSlot, IItemAsset itemAsset, int quantity,
+            int originalSlotIndex = -1) where TSlot : struct, IServicableGridSlot<T>
+        {
+            SetItemInternal(ref gridSlot, itemAsset, quantity, originalSlotIndex);
+        }
+
+        public static void SetItem(IServicableGridSlot<T> gridSlot, IItemAsset itemAsset, int quantity,
+            int originalSlotIndex = -1)
+        {
+            SetItemInternal(ref gridSlot, itemAsset, quantity, originalSlotIndex);
+        }
+
+        public static void SetItemInternal<TSlot>(ref TSlot gridSlot, IItemAsset itemAsset, int quantity,
+            int originalSlotIndex = -1) where TSlot : IServicableGridSlot<T>
         {
             bool wasEmpty = gridSlot.IsEmpty;
             bool wasOriginalItemOwner = gridSlot.HasOriginalItem;
@@ -182,7 +195,6 @@ namespace SimpleU.Inventory
                 gridSlot.SetQuantityItem(quantityItem);
             }
 
-
             gridSlot.SetOriginalSlotIndex(originalSlotIndex);
 
             if (wasEmpty && gridSlot.HasOriginalItem)
@@ -195,7 +207,19 @@ namespace SimpleU.Inventory
             }
         }
 
+        public static bool TryConsumeQuantity<TSlot>(ref TSlot gridSlot, int quantity)
+            where TSlot : struct,IServicableGridSlot<T>
+        {
+            return TryConsumeQuantityInternal(ref gridSlot, quantity);
+        }
+
         public static bool TryConsumeQuantity(IServicableGridSlot<T> gridSlot, int quantity)
+        {
+            return TryConsumeQuantityInternal(ref gridSlot, quantity);
+        }
+
+        private static bool TryConsumeQuantityInternal<TSlot>(ref TSlot gridSlot, int quantity)
+            where TSlot : IServicableGridSlot<T>
         {
             if (quantity <= 0 || gridSlot.Quantity < quantity)
                 return false;

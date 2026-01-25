@@ -29,7 +29,8 @@ namespace SimpleU.Inventory
                     
                     if (!sourceGridSlot.IsEmpty)
                     {
-                        gridSlot.SetItem(sourceGridSlot.ItemAsset, sourceGridSlot.Quantity, sourceGridSlot.OriginalSlotIndex);
+                        int originalSlotIndex = sourceGridSlot.HasOriginalItem ? -1 : sourceGridSlot.OriginalSlotIndex;
+                        gridSlot.SetItem(sourceGridSlot.ItemAsset, sourceGridSlot.Quantity, originalSlotIndex);
                     }
                     
                     _slots[slotIndex] = gridSlot;
@@ -163,12 +164,12 @@ namespace SimpleU.Inventory
 
         public void SetItem(IItemAsset itemAsset, int quantity, int originalSlotIndex = -1)
         {
-            GridSlotService<T>.SetItem(this, itemAsset, quantity, originalSlotIndex);
+            GridSlotService<T>.SetItem(ref this, itemAsset, quantity, originalSlotIndex);
         }
 
         public bool TryConsumeQuantity(int quantity)
         {
-            return GridSlotService<T>.TryConsumeQuantity(this, quantity);
+            return GridSlotService<T>.TryConsumeQuantity(ref this, quantity);
         }
 
         public void AddQuantity(int quantity)
