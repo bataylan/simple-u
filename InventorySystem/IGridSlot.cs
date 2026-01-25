@@ -7,7 +7,6 @@ namespace SimpleU.Inventory
     {
         bool IsEmpty { get; }
         bool HasOriginalItem { get; }
-        RowColumnIndex[] RelativeSlotIndexes { get; }
         int Index { get; }
         int RowIndex { get; }
         int ColumnIndex { get; }
@@ -20,7 +19,11 @@ namespace SimpleU.Inventory
         IQuantityItem QuantityItem {get;}
         Action<IGridSlot> OnEmptinessChange { get; set; }
         Action<IGridSlot> OnQuantityChange { get; set; }
-
+        
+        void SetItem(IItemAsset itemAsset, int quantity, int originalSlotIndex = -1);
+        void AddQuantity(int quantity);
+        bool IsStackable(IItemAsset itemAsset, int count);
+        int LeftCapacity();
         bool GetIsDroppableToTargetSlot(IGridSlot gridSlot);
         bool GetIsStackableToTargetGridSlot(IGridSlot gridSlot);
         bool TryConsumeQuantity(int quantity);
