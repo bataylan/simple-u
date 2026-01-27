@@ -5,7 +5,7 @@ namespace SimpleU.Inventory
 {
     public struct TemporaryInventoryManager<T> : IInventoryManager, IDisposable where T : IItemAsset
     {
-        public int SlotCount => _slots.Length;
+        public int SlotCount => _slots != null ? _slots.Length : 0;
         public int ColumnCount { get; private set; }
         public int RowCount { get; private set; }
 
