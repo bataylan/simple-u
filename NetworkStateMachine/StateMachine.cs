@@ -233,10 +233,6 @@ namespace SimpleU.NetworkChainedStateMachine
                     var targetState = GetStateByName(p.targetName);
                     if (targetState.condition == matchedEffect)
                     {
-                        if (targetState.IsActive)
-                        {
-                            Debug.LogError("Loop Detected?");
-                        }
                         SetForwardState(currentState, targetState);
                         return;
                     }
