@@ -55,7 +55,7 @@ namespace SimpleU.Inventory
             return InventoryManagerService<T>.CanAddItemQuantity(this, inventoryItem, quantity, out leftQuantity);
         }
 
-        public bool TryAddItemQuantitySmart(IItemAsset inventoryItem, int quantity, out int leftQuantity)
+        public virtual bool TryAddItemQuantitySmart(IItemAsset inventoryItem, int quantity, out int leftQuantity)
         {
             return InventoryManagerService<T>.TryAddItemQuantitySmart(this, inventoryItem, quantity, out leftQuantity);
         }
