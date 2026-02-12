@@ -50,7 +50,7 @@ namespace SimpleU.Inventory
                 out gridSlot, stackItems);
         }
 
-        public bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity)
+        public virtual bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity)
         {
             return InventoryManagerService<T>.CanAddItemQuantity(this, inventoryItem, quantity, out leftQuantity);
         }
