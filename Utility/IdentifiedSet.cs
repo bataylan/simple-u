@@ -49,7 +49,7 @@ namespace SimpleU.Utility
         {
             for (int i = 0; i < _items.Count; i++)
             {
-                if (_items[i].Equals(item))
+                if (_items[i] != null && _items[i].Equals(item))
                 {
                     index = _ids[i];
                     return true;
