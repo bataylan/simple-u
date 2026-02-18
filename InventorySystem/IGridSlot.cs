@@ -6,6 +6,7 @@ namespace SimpleU.Inventory
     public interface IGridSlot
     {
         bool IsEmpty { get; }
+        bool IsFull { get; }
         bool HasOriginalItem { get; }
         int Index { get; }
         int RowIndex { get; }

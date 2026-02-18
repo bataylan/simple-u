@@ -6,11 +6,6 @@ using UnityEngine;
 
 namespace SimpleU.Inventory
 {
-    public interface IQuantityItem<T> : IQuantityItem where T : IItemAsset
-    {
-        new T ItemAsset { get; }
-    }
-    
     public interface IQuantityItem
     {
         bool Valid { get; }
@@ -21,16 +16,14 @@ namespace SimpleU.Inventory
     }
 
     [Serializable]
-    public struct QuantityItem<T> : IQuantityItem<T> where T : IItemAsset
+    public struct QuantityItem : IQuantityItem
     {
-        public T itemAsset;
+        public IItemAsset itemAsset;
         public int quantity;
 
-        public T ItemAsset => itemAsset;
+        public IItemAsset ItemAsset => itemAsset;
         public int Quantity => quantity;
         public bool Valid => itemAsset != null && quantity > 0;
-
-        IItemAsset IQuantityItem.ItemAsset => ItemAsset;
 
         public void SetQuantity(int quantity)
         {

@@ -3,7 +3,7 @@ using SimpleU.DataContainer;
 
 namespace SimpleU.Inventory
 {
-    public struct TemporaryInventoryManager<T> : IInventoryManager, IDisposable where T : IItemAsset
+    public struct TemporaryInventoryManager : IInventoryManager, IDisposable
     {
         public int SlotCount => _slots != null ? _slots.Length : 0;
         public int ColumnCount { get; private set; }
@@ -25,7 +25,7 @@ namespace SimpleU.Inventory
                 for (int j = 0; j < ColumnCount; j++)
                 {
                     var sourceGridSlot = inventoryManager.GridSlots[slotIndex];
-                    var gridSlot = new TemporaryGrid<T>(this, slotIndex, i, j, sourceGridSlot.Capacity);
+                    var gridSlot = new TemporaryGrid(this, slotIndex, i, j, sourceGridSlot.Capacity);
                     
                     if (!sourceGridSlot.IsEmpty)
                     {
@@ -54,7 +54,7 @@ namespace SimpleU.Inventory
             {
                 for (int j = 0; j < ColumnCount; j++)
                 {
-                    _slots[slotIndex] = new TemporaryGrid<T>(this, slotIndex, i, j, slotCapacity);
+                    _slots[slotIndex] = new TemporaryGrid(this, slotIndex, i, j, slotCapacity);
                     slotIndex++;
                 }
             }
@@ -62,47 +62,47 @@ namespace SimpleU.Inventory
 
         public bool TryAddItemQuantityToSlot(IItemAsset inventoryItem, int quantity, int slotIndex, out int leftCount)
         {
-            return InventoryManagerService<T>.TryAddItemQuantityToSlot(this, inventoryItem, quantity, slotIndex, 
+            return InventoryManagerService.TryAddItemQuantityToSlot(this, inventoryItem, quantity, slotIndex, 
                 out leftCount);
         }
 
         public bool TryAddItemToSingleSlot(IItemAsset inventoryItem, int quantity, out int leftCount,
             out IGridSlot gridSlot, bool stackItems = true)
         {
-            return InventoryManagerService<T>.TryAddItemToSingleSlot(this, inventoryItem, quantity, out leftCount,
+            return InventoryManagerService.TryAddItemToSingleSlot(this, inventoryItem, quantity, out leftCount,
                 out gridSlot, stackItems);
         }
 
         public bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity)
         {
-            return InventoryManagerService<T>.CanAddItemQuantity(this, inventoryItem, quantity, out leftQuantity);
+            return InventoryManagerService.CanAddItemQuantity(this, inventoryItem, quantity, out leftQuantity);
         }
 
         public bool TryAddItemQuantitySmart(IItemAsset inventoryItem, int quantity, out int leftQuantity)
         {
-            return InventoryManagerService<T>.TryAddItemQuantitySmart(this, inventoryItem, quantity, out leftQuantity);
+            return InventoryManagerService.TryAddItemQuantitySmart(this, inventoryItem, quantity, out leftQuantity);
         }
 
         public bool CanAddItemFromSingleSlot(IItemAsset inventoryItem, int quantity, out int leftQuantity,
             out int completedQuantity, out IGridSlot gridSlot, bool stackItems = true)
         {
-            return InventoryManagerService<T>.CanAddItemToSlot(this, inventoryItem, quantity, out leftQuantity,
+            return InventoryManagerService.CanAddItemToSlot(this, inventoryItem, quantity, out leftQuantity,
                 out completedQuantity, out gridSlot, stackItems);
         }
         
         public int TryGetSlotIndex(IItemAsset item)
         {
-            return InventoryManagerService<T>.TryGetSlotIndex(this, item);
+            return InventoryManagerService.TryGetSlotIndex(this, item);
         }
 
         public bool HasEnoughQuantity(IItemAsset itemAsset, int quantity)
         {
-            return InventoryManagerService<T>.HasEnoughQuantity(this, itemAsset, quantity);
+            return InventoryManagerService.HasEnoughQuantity(this, itemAsset, quantity);
         }
 
         public int GetQuantity(IItemAsset itemAsset)
         {
-            return InventoryManagerService<T>.GetQuantity(this, itemAsset);
+            return InventoryManagerService.GetQuantity(this, itemAsset);
         }
 
         public void Dispose()
@@ -111,12 +111,12 @@ namespace SimpleU.Inventory
         }
     }
 
-    public struct TemporaryGrid<T> : IServicableGridSlot<T> where T : IItemAsset
+    public struct TemporaryGrid : IServicableGridSlot
     {
         public int Quantity
         {
             get => _quantityItem != null ? _quantityItem.Quantity : 0;
-            private set => GridSlotService<T>.SetQuantity(ref this, value);
+            private set => GridSlotService.SetQuantity(ref this, value);
         }
         public bool IsEmpty => ItemAsset == null || Quantity <= 0;
         public bool HasOriginalItem => !IsEmpty && !IsRelativeSlot;
@@ -148,7 +148,7 @@ namespace SimpleU.Inventory
         private int _columnIndex;
         private int _capacity;
         private int _originalSlotIndex;
-        private IQuantityItem<T> _quantityItem;
+        private IQuantityItem _quantityItem;
 
         public TemporaryGrid(IInventoryManager inventoryManager, int index, int rowIndex, int columnIndex,
             int capacity = int.MaxValue)
@@ -164,12 +164,12 @@ namespace SimpleU.Inventory
 
         public void SetItem(IItemAsset itemAsset, int quantity, int originalSlotIndex = -1)
         {
-            GridSlotService<T>.SetItem(ref this, itemAsset, quantity, originalSlotIndex);
+            GridSlotService.SetItem(ref this, itemAsset, quantity, originalSlotIndex);
         }
 
         public bool TryConsumeQuantity(int quantity)
         {
-            return GridSlotService<T>.TryConsumeQuantity(ref this, quantity);
+            return GridSlotService.TryConsumeQuantity(ref this, quantity);
         }
 
         public void AddQuantity(int quantity)
@@ -179,32 +179,32 @@ namespace SimpleU.Inventory
 
         public bool IsStackable(IItemAsset itemAsset, int count)
         {
-            return GridSlotService<T>.IsStackable(this, itemAsset, count);
+            return GridSlotService.IsStackable(this, itemAsset, count);
         }
 
         public bool HasCapacity(int count)
         {
-            return GridSlotService<T>.HasCapacity(this, count);
+            return GridSlotService.HasCapacity(this, count);
         }
 
-        public int LeftCapacity() => GridSlotService<T>.LeftCapacity(this);
+        public int LeftCapacity() => GridSlotService.LeftCapacity(this);
 
         public bool GetIsDroppableToTargetSlot(IGridSlot gridSlot)
         {
-            return GridSlotService<T>.GetIsDroppableToTargetSlot(this, gridSlot);
+            return GridSlotService.GetIsDroppableToTargetSlot(this, gridSlot);
         }
 
         public bool GetIsStackableToTargetGridSlot(IGridSlot gridSlot)
         {
-            return GridSlotService<T>.GetIsStackableToTargetGridSlot(this, gridSlot);
+            return GridSlotService.GetIsStackableToTargetGridSlot(this, gridSlot);
         }
 
-        void IServicableGridSlot<T>.SetQuantityItem(QuantityItem<T> quantityItem)
+        void IServicableGridSlot.SetQuantityItem(QuantityItem quantityItem)
         {
             _quantityItem = quantityItem;
         }
 
-        void IServicableGridSlot<T>.SetOriginalSlotIndex(int originalSlotIndex)
+        void IServicableGridSlot.SetOriginalSlotIndex(int originalSlotIndex)
         {
             _originalSlotIndex = originalSlotIndex;
         }

@@ -7,13 +7,13 @@ namespace SimpleU.Tests.Inventory
 {
     public class InventoryManagerTests
     {
-        private AInventoryManager<ItemAsset> _inventoryManager;
+        private AInventoryManager _inventoryManager;
         private ItemAsset _testItem;
 
         [SetUp]
         public void SetUp()
         {
-            _inventoryManager = new AInventoryManager<ItemAsset>(2, 2);
+            _inventoryManager = new AInventoryManager(2, 2);
             _testItem = ScriptableObject.CreateInstance<ItemAsset>();
         }
 

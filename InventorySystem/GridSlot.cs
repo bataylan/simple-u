@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace SimpleU.Inventory
 {
-    public class GridSlot<T> : IServicableGridSlot<T> where T : IItemAsset
+    public class GridSlot : IServicableGridSlot
     {
         public bool IsEmpty => ItemAsset == null || Quantity <= 0;
         public bool HasOriginalItem => !IsEmpty && !IsRelativeSlot;
@@ -17,10 +17,9 @@ namespace SimpleU.Inventory
         public int Quantity
         {
             get => _quantityItem != null ? _quantityItem.Quantity : 0;
-            private set => GridSlotService<T>.SetQuantity(this, value);
+            private set => GridSlotService.SetQuantity(this, value);
         }
         public IItemAsset ItemAsset => _quantityItem != null ? _quantityItem.ItemAsset : default;
-        public T CastedItem => (T)ItemAsset;
         public int OriginalSlotIndex => IsRelativeSlot ? _originalSlotIndex : Index;
         public IQuantityItem QuantityItem => _quantityItem;
         public int Capacity => _capacity;
@@ -28,7 +27,7 @@ namespace SimpleU.Inventory
         private int _originalSlotIndex;
         private IInventoryManager _inventoryManager;
         private int _index, _rowIndex, _columnIndex;
-        private IQuantityItem<T> _quantityItem;
+        private IQuantityItem _quantityItem;
         private int _capacity;
 
         public Action<IGridSlot> OnEmptinessChange { get; set; }
@@ -46,12 +45,12 @@ namespace SimpleU.Inventory
 
         public void SetItem(IItemAsset itemAsset, int quantity, int originalSlotIndex = -1)
         {
-            GridSlotService<T>.SetItem(this, itemAsset, quantity, originalSlotIndex);
+            GridSlotService.SetItem(this, itemAsset, quantity, originalSlotIndex);
         }
 
         public bool TryConsumeQuantity(int quantity)
         {
-            return GridSlotService<T>.TryConsumeQuantity(this, quantity);
+            return GridSlotService.TryConsumeQuantity(this, quantity);
         }
 
         public void AddQuantity(int quantity)
@@ -61,58 +60,58 @@ namespace SimpleU.Inventory
 
         public bool IsStackable(IItemAsset itemAsset, int count)
         {
-            return GridSlotService<T>.IsStackable(this, itemAsset, count);
+            return GridSlotService.IsStackable(this, itemAsset, count);
         }
 
         public bool HasCapacity(int count)
         {
-            return GridSlotService<T>.HasCapacity(this, count);
+            return GridSlotService.HasCapacity(this, count);
         }
 
-        public int LeftCapacity() => GridSlotService<T>.LeftCapacity(this);
+        public int LeftCapacity() => GridSlotService.LeftCapacity(this);
 
         public bool GetIsDroppableToTargetSlot(IGridSlot gridSlot)
         {
-            return GridSlotService<T>.GetIsDroppableToTargetSlot(this, gridSlot);
+            return GridSlotService.GetIsDroppableToTargetSlot(this, gridSlot);
         }
 
         public bool GetIsStackableToTargetGridSlot(IGridSlot gridSlot)
         {
-            return GridSlotService<T>.GetIsStackableToTargetGridSlot(this, gridSlot);
+            return GridSlotService.GetIsStackableToTargetGridSlot(this, gridSlot);
         }
 
-        void IServicableGridSlot<T>.SetQuantityItem(QuantityItem<T> quantityItem)
+        void IServicableGridSlot.SetQuantityItem(QuantityItem quantityItem)
         {
             _quantityItem = quantityItem;
         }
 
-        void IServicableGridSlot<T>.SetOriginalSlotIndex(int originalSlotIndex)
+        void IServicableGridSlot.SetOriginalSlotIndex(int originalSlotIndex)
         {
             _originalSlotIndex = originalSlotIndex;
         }
     }
 
-    public interface IServicableGridSlot<T> : IGridSlot where T : IItemAsset
+    public interface IServicableGridSlot : IGridSlot
     {
-        void SetQuantityItem(QuantityItem<T> quantityItem);
+        void SetQuantityItem(QuantityItem quantityItem);
         void SetOriginalSlotIndex(int originalSlotIndex);
     }
 
-    public static class GridSlotService<T> where T : IItemAsset
+    public static class GridSlotService
     {
-        public static void SetQuantity(IServicableGridSlot<T> gridSlot, int value)
+        public static void SetQuantity(IServicableGridSlot gridSlot, int value)
         {
             SetQuantityInternal(ref gridSlot, value);
         }
 
         public static void SetQuantity<TSlot>(ref TSlot slot, int value)
-            where TSlot : struct, IServicableGridSlot<T>
+            where TSlot : struct, IServicableGridSlot
         {
             SetQuantityInternal(ref slot, value);
         }
 
         private static void SetQuantityInternal<TSlot>(ref TSlot gridSlot, int value)
-            where TSlot : IServicableGridSlot<T>
+            where TSlot : IServicableGridSlot
         {
             int safeQuantity = Mathf.Max(value, 0);
             if (safeQuantity == gridSlot.Quantity)
@@ -133,7 +132,7 @@ namespace SimpleU.Inventory
             gridSlot.OnQuantityChange?.Invoke(gridSlot);
         }
 
-        public static bool GetIsDroppableToTargetSlot(IServicableGridSlot<T> gridSlot, IGridSlot targetSlot)
+        public static bool GetIsDroppableToTargetSlot(IServicableGridSlot gridSlot, IGridSlot targetSlot)
         {
             if (gridSlot.IsEmpty || targetSlot == gridSlot)
                 return true;
@@ -147,36 +146,36 @@ namespace SimpleU.Inventory
             return false;
         }
 
-        public static bool GetIsStackableToTargetGridSlot(IServicableGridSlot<T> gridSlot, IGridSlot targetSlot)
+        public static bool GetIsStackableToTargetGridSlot(IServicableGridSlot gridSlot, IGridSlot targetSlot)
         {
-            var target = targetSlot as GridSlot<T>;
+            var target = targetSlot as GridSlot;
             return !gridSlot.IsEmpty && !target.IsEmpty && target.IsStackable(gridSlot.ItemAsset, gridSlot.Quantity);
         }
 
-        public static bool IsStackable(IServicableGridSlot<T> gridSlot, IItemAsset itemAsset, int count)
+        public static bool IsStackable(IServicableGridSlot gridSlot, IItemAsset itemAsset, int count)
         {
             return HasCapacity(gridSlot, count) && (gridSlot.IsEmpty || gridSlot.ItemAsset.Equals(itemAsset));
         }
 
-        public static int LeftCapacity(IServicableGridSlot<T> gridSlot)
+        public static int LeftCapacity(IServicableGridSlot gridSlot)
         {
             return gridSlot.Capacity - gridSlot.Quantity;
         }
 
         public static void SetItem<TSlot>(ref TSlot gridSlot, IItemAsset itemAsset, int quantity,
-            int originalSlotIndex = -1) where TSlot : struct, IServicableGridSlot<T>
+            int originalSlotIndex = -1) where TSlot : struct, IServicableGridSlot
         {
             SetItemInternal(ref gridSlot, itemAsset, quantity, originalSlotIndex);
         }
 
-        public static void SetItem(IServicableGridSlot<T> gridSlot, IItemAsset itemAsset, int quantity,
+        public static void SetItem(IServicableGridSlot gridSlot, IItemAsset itemAsset, int quantity,
             int originalSlotIndex = -1)
         {
             SetItemInternal(ref gridSlot, itemAsset, quantity, originalSlotIndex);
         }
 
         public static void SetItemInternal<TSlot>(ref TSlot gridSlot, IItemAsset itemAsset, int quantity,
-            int originalSlotIndex = -1) where TSlot : IServicableGridSlot<T>
+            int originalSlotIndex = -1) where TSlot : IServicableGridSlot
         {
             bool wasEmpty = gridSlot.IsEmpty;
             bool wasOriginalItemOwner = gridSlot.HasOriginalItem;
@@ -187,9 +186,9 @@ namespace SimpleU.Inventory
             }
             else
             {
-                var quantityItem = new QuantityItem<T>()
+                var quantityItem = new QuantityItem()
                 {
-                    itemAsset = (T)itemAsset,
+                    itemAsset = itemAsset,
                     quantity = quantity
                 };
                 gridSlot.SetQuantityItem(quantityItem);
@@ -208,18 +207,18 @@ namespace SimpleU.Inventory
         }
 
         public static bool TryConsumeQuantity<TSlot>(ref TSlot gridSlot, int quantity)
-            where TSlot : struct,IServicableGridSlot<T>
+            where TSlot : struct,IServicableGridSlot
         {
             return TryConsumeQuantityInternal(ref gridSlot, quantity);
         }
 
-        public static bool TryConsumeQuantity(IServicableGridSlot<T> gridSlot, int quantity)
+        public static bool TryConsumeQuantity(IServicableGridSlot gridSlot, int quantity)
         {
             return TryConsumeQuantityInternal(ref gridSlot, quantity);
         }
 
         private static bool TryConsumeQuantityInternal<TSlot>(ref TSlot gridSlot, int quantity)
-            where TSlot : IServicableGridSlot<T>
+            where TSlot : IServicableGridSlot
         {
             if (quantity <= 0 || gridSlot.Quantity < quantity)
                 return false;
@@ -228,7 +227,7 @@ namespace SimpleU.Inventory
             return true;
         }
 
-        public static bool HasCapacity(IServicableGridSlot<T> gridSlot, int count)
+        public static bool HasCapacity(IServicableGridSlot gridSlot, int count)
         {
             return (gridSlot.Quantity + count) <= gridSlot.Capacity;
         }

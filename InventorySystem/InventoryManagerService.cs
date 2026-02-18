@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace SimpleU.Inventory
 {
-    public static class InventoryManagerService<T> where T : IItemAsset
+    public static class InventoryManagerService
     {
         public static bool TryAddItemQuantityToSlot(IInventoryManager inventory, IItemAsset inventoryItem, int quantity,
             int slotIndex, out int leftCount)
@@ -20,7 +20,7 @@ namespace SimpleU.Inventory
             if (!canAddItem)
                 return false;
 
-            AddItem_Internal(inventory, gridSlot, (T)inventoryItem, completedQuantity);
+            AddItem_Internal(inventory, gridSlot, inventoryItem, completedQuantity);
 
             return leftCount != quantity;
         }
@@ -34,7 +34,7 @@ namespace SimpleU.Inventory
             if (!canAddItem)
                 return false;
 
-            AddItem_Internal(inventory, gridSlot, (T)inventoryItem, completedQuantity);
+            AddItem_Internal(inventory, gridSlot, inventoryItem, completedQuantity);
 
             return leftCount != quantity;
         }
@@ -47,19 +47,16 @@ namespace SimpleU.Inventory
             if (inventoryItem == null || quantity == 0)
                 return false;
 
-            if (inventoryItem is not T safeItem)
-                return false;
-
-            CheckAddItem_Internal(inventory, safeItem, quantity, true, out leftQuantity);
+            CheckAddItem_Internal(inventory, inventoryItem, quantity, true, out leftQuantity);
             return leftQuantity != quantity;
         }
 
-        private static void AddItem_Internal(IInventoryManager inventory, IGridSlot slotToAdd, T itemAsset,
+        private static void AddItem_Internal(IInventoryManager inventory, IGridSlot slotToAdd, IItemAsset itemAsset,
             int completedQuantity)
         {
             if (slotToAdd.IsEmpty)
             {
-                var quantityItem = new QuantityItem<T>
+                var quantityItem = new QuantityItem
                 {
                     itemAsset = itemAsset,
                     quantity = completedQuantity
@@ -73,7 +70,7 @@ namespace SimpleU.Inventory
             }
         }
 
-        private static void SetItemToGridSlot(IInventoryManager inventory, IGridSlot slotToAdd, IQuantityItem<T> quantityItem)
+        private static void SetItemToGridSlot(IInventoryManager inventory, IGridSlot slotToAdd, IQuantityItem quantityItem)
         {
             slotToAdd.SetItem(quantityItem.ItemAsset, quantityItem.Quantity);
 
@@ -99,14 +96,11 @@ namespace SimpleU.Inventory
             if (inventoryItem == null || quantity == 0)
                 return false;
 
-            if (inventoryItem is not T safeItem)
-                return false;
-
-            CheckAddItem_Internal(inventory, safeItem, quantity, false, out leftQuantity);
+            CheckAddItem_Internal(inventory, inventoryItem, quantity, false, out leftQuantity);
             return leftQuantity != quantity;
         }
 
-        public static void CheckAddItem_Internal(IInventoryManager inventory, T itemAsset, int quantity,
+        public static void CheckAddItem_Internal(IInventoryManager inventory, IItemAsset itemAsset, int quantity,
             bool doAdd, out int leftQuantity)
         {
             leftQuantity = quantity;
@@ -157,13 +151,13 @@ namespace SimpleU.Inventory
 
                 if (doAdd)
                 {
-                    var quantityITem = new QuantityItem<T>()
+                    var quantityItem = new QuantityItem()
                     {
                         itemAsset = itemAsset,
                         quantity = usedCapacity
                     };
 
-                    SetItemToGridSlot(inventory, slot, quantityITem);
+                    SetItemToGridSlot(inventory, slot, quantityItem);
                 }
 
                 if (leftQuantity == 0)
@@ -178,9 +172,6 @@ namespace SimpleU.Inventory
             completedQuantity = 0;
 
             if (inventoryItem == null || quantity == 0)
-                return false;
-
-            if (inventoryItem is not T)
                 return false;
 
             var slotToAdd = gridSlot;
@@ -209,10 +200,7 @@ namespace SimpleU.Inventory
             if (inventoryItem == null || quantity == 0)
                 return false;
 
-            if (inventoryItem is not T safeItem)
-                return false;
-
-            if (!TryGetSlotToAdd(inventory, safeItem, quantity, stackItems, out IGridSlot slotToAdd))
+            if (!TryGetSlotToAdd(inventory, inventoryItem, quantity, stackItems, out IGridSlot slotToAdd))
                 return false;
 
             if (!CanAddItemQuantityToSlot_Internal(inventoryItem, quantity, slotToAdd, out leftQuantity, out completedQuantity))
@@ -253,7 +241,7 @@ namespace SimpleU.Inventory
             return leftQuantity != quantity;
         }
 
-        private static bool TryGetSlotToAdd(IInventoryManager inventory, T itemAsset, int quantity,
+        private static bool TryGetSlotToAdd(IInventoryManager inventory, IItemAsset itemAsset, int quantity,
             bool stackItems, out IGridSlot slotToAdd)
         {
             slotToAdd = null;
@@ -271,7 +259,7 @@ namespace SimpleU.Inventory
             return slotToAdd != null;
         }
 
-        private static IGridSlot GetStackableSlot(IInventoryManager inventory, T itemAsset, int quantity)
+        private static IGridSlot GetStackableSlot(IInventoryManager inventory, IItemAsset itemAsset, int quantity)
         {
             for (int i = 0; i < inventory.SlotCount; i++)
             {
@@ -282,7 +270,7 @@ namespace SimpleU.Inventory
             return null;
         }
 
-        private static bool IsStackable(IInventoryManager inventory, T itemAsset, int quantity, int slotIndex)
+        private static bool IsStackable(IInventoryManager inventory, IItemAsset itemAsset, int quantity, int slotIndex)
         {
             var gridSlot = inventory.GridSlots[slotIndex];
             if (gridSlot.IsEmpty || gridSlot.IsRelativeSlot)
@@ -291,7 +279,7 @@ namespace SimpleU.Inventory
             return !gridSlot.IsEmpty && !gridSlot.IsRelativeSlot && gridSlot.IsStackable(itemAsset, quantity);
         }
 
-        private static IGridSlot GetEmptySuitableSlot(IInventoryManager inventory, T itemAsset)
+        private static IGridSlot GetEmptySuitableSlot(IInventoryManager inventory, IItemAsset itemAsset)
         {
             var relativeSlotIndexes = itemAsset.RelativeSlotIndexes;
 
@@ -366,28 +354,12 @@ namespace SimpleU.Inventory
             return -1;
         }
         
-        public static bool HasEnoughQuantity(IInventoryManager inventory,IItemAsset itemAsset, int quantity)
+        public static bool HasEnoughQuantity(IInventoryManager inventory, IItemAsset itemAsset, int quantity)
         {
-            if (itemAsset is not T safeItem)
-                return false;
-
-            return HasEnoughQuantityTyped(inventory, safeItem, quantity);
-        }
-
-        public static bool HasEnoughQuantityTyped(IInventoryManager inventory, T itemAsset, int quantity)
-        {
-            return GetQuantityTyped(inventory, itemAsset) >= quantity;
+            return GetQuantity(inventory, itemAsset) >= quantity;
         }
 
         public static int GetQuantity(IInventoryManager inventory, IItemAsset itemAsset)
-        {
-            if (itemAsset is not T safeItem)
-                return 0;
-
-            return GetQuantityTyped(inventory, safeItem);
-        }
-
-        public static int GetQuantityTyped(IInventoryManager inventory, T itemAsset)
         {
             if (itemAsset == null)
                 return 0;
