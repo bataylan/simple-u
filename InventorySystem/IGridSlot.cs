@@ -18,8 +18,6 @@ namespace SimpleU.Inventory
         int Quantity { get; }
         int Capacity { get; }
         IQuantityItem QuantityItem {get;}
-        Action<IGridSlot> OnEmptinessChange { get; set; }
-        Action<IGridSlot> OnQuantityChange { get; set; }
         
         void SetItem(IItemAsset itemAsset, int quantity, int originalSlotIndex = -1);
         void AddQuantity(int quantity);

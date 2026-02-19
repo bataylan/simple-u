@@ -116,7 +116,7 @@ namespace SimpleU.Inventory
         public int Quantity
         {
             get => _quantityItem != null ? _quantityItem.Quantity : 0;
-            private set => GridSlotService.SetQuantity(ref this, value);
+            private set => SetItem(_quantityItem.ItemAsset, value, OriginalSlotIndex);
         }
         public bool IsEmpty => ItemAsset == null || Quantity <= 0;
         public bool HasOriginalItem => !IsEmpty && !IsRelativeSlot;
@@ -130,17 +130,6 @@ namespace SimpleU.Inventory
         public IItemAsset ItemAsset => _quantityItem != null ? _quantityItem.ItemAsset : default;
         public int Capacity => _capacity;
         public IQuantityItem QuantityItem => _quantityItem;
-
-        public Action<IGridSlot> OnEmptinessChange
-        {
-            get => null;
-            set => throw new NotImplementedException();
-        }
-        public Action<IGridSlot> OnQuantityChange 
-        {
-            get => null;
-            set => throw new NotImplementedException();
-        }
 
         private IInventoryManager _inventoryManager;
         private int _index;
@@ -169,7 +158,11 @@ namespace SimpleU.Inventory
 
         public bool TryConsumeQuantity(int quantity)
         {
-            return GridSlotService.TryConsumeQuantity(ref this, quantity);
+            if (quantity <= 0 || Quantity < quantity)
+                return false;
+
+            SetItem(_quantityItem.ItemAsset, Quantity - quantity, OriginalSlotIndex);
+            return true;
         }
 
         public void AddQuantity(int quantity)

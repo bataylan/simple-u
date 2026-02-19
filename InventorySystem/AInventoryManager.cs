@@ -11,21 +11,10 @@ namespace SimpleU.Inventory
         {
             RowCount = rowCount;
             ColumnCount = columnCount;
-
-            _slots = new GridSlot[SlotCount];
-
             if (slotCapacity <= 0)
                 slotCapacity = int.MaxValue;
 
-            int slotIndex = 0;
-            for (int i = 0; i < RowCount; i++)
-            {
-                for (int j = 0; j < ColumnCount; j++)
-                {
-                    _slots[slotIndex] = CreateGridSlot(slotIndex, i, j, slotCapacity);
-                    slotIndex++;
-                }
-            }
+            InitializeGridSlots(slotCapacity);
         }
 
         public int ColumnCount { get; private set; }
@@ -40,6 +29,21 @@ namespace SimpleU.Inventory
         protected virtual IGridSlot CreateGridSlot(int index, int rowIndex, int columnIndex, int capacity)
         {
             return new GridSlot(this, index, rowIndex, columnIndex, capacity);
+        }
+        
+        protected virtual void InitializeGridSlots(int slotCapacity)
+        {
+            _slots = new GridSlot[SlotCount];
+
+            int slotIndex = 0;
+            for (int i = 0; i < RowCount; i++)
+            {
+                for (int j = 0; j < ColumnCount; j++)
+                {
+                    _slots[slotIndex] = CreateGridSlot(slotIndex, i, j, slotCapacity);
+                    slotIndex++;
+                }
+            }
         }
 
         public virtual bool TryAddItemQuantityToSlot(IItemAsset inventoryItem, int quantity, int slotIndex, out int leftCount)
