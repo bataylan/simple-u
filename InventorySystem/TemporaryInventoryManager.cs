@@ -111,7 +111,7 @@ namespace SimpleU.Inventory
         }
     }
 
-    public struct TemporaryGrid : IServicableGridSlot
+    public struct TemporaryGrid : IGridSlot
     {
         public int Quantity
         {
@@ -153,7 +153,21 @@ namespace SimpleU.Inventory
 
         public void SetItem(IItemAsset itemAsset, int quantity, int originalSlotIndex = -1)
         {
-            GridSlotService.SetItem(ref this, itemAsset, quantity, originalSlotIndex);
+            if (itemAsset == null)
+            {
+                SetQuantityItem(default);
+            }
+            else
+            {
+                var quantityItem = new QuantityItem()
+                {
+                    itemAsset = itemAsset,
+                    quantity = quantity
+                };
+                SetQuantityItem(quantityItem);
+            }
+
+            SetOriginalSlotIndex(originalSlotIndex);
         }
 
         public bool TryConsumeQuantity(int quantity)
@@ -192,12 +206,12 @@ namespace SimpleU.Inventory
             return GridSlotService.GetIsStackableToTargetGridSlot(this, gridSlot);
         }
 
-        void IServicableGridSlot.SetQuantityItem(QuantityItem quantityItem)
+        void SetQuantityItem(QuantityItem quantityItem)
         {
             _quantityItem = quantityItem;
         }
 
-        void IServicableGridSlot.SetOriginalSlotIndex(int originalSlotIndex)
+        void SetOriginalSlotIndex(int originalSlotIndex)
         {
             _originalSlotIndex = originalSlotIndex;
         }

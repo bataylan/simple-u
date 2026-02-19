@@ -3,7 +3,7 @@ using SimpleU.DataContainer;
 
 namespace SimpleU.Inventory
 {
-    public class GridSlot : IServicableGridSlot
+    public class GridSlot : IGridSlot
     {
         public bool IsEmpty => ItemAsset == null || Quantity <= 0;
         public bool HasOriginalItem => !IsEmpty && !IsRelativeSlot;
@@ -13,11 +13,7 @@ namespace SimpleU.Inventory
         public bool IsRelativeSlot => !IsEmpty && _originalSlotIndex >= 0;
         public IInventoryManager InventoryManager => _inventoryManager;
         public bool IsFull => Quantity >= Capacity;
-        public int Quantity
-        {
-            get => _quantityItem != null ? _quantityItem.Quantity : 0;
-            private set => SetQuantity(this, value);
-        }
+        public int Quantity => _quantityItem != null ? _quantityItem.Quantity : 0;
         public IItemAsset ItemAsset => _quantityItem != null ? _quantityItem.ItemAsset : default;
         public int OriginalSlotIndex => IsRelativeSlot ? _originalSlotIndex : Index;
         public IQuantityItem QuantityItem => _quantityItem;
@@ -44,7 +40,33 @@ namespace SimpleU.Inventory
 
         public void SetItem(IItemAsset itemAsset, int quantity, int originalSlotIndex = -1)
         {
-            GridSlotService.SetItem(this, itemAsset, quantity, originalSlotIndex);
+            bool wasEmpty = IsEmpty;
+            bool wasOriginalItemOwner = HasOriginalItem;
+            
+            if (itemAsset == null)
+            {
+                SetQuantityItem(default);
+            }
+            else
+            {
+                var quantityItem = new QuantityItem()
+                {
+                    itemAsset = itemAsset,
+                    quantity = quantity
+                };
+                SetQuantityItem(quantityItem);
+            }
+
+            SetOriginalSlotIndex(originalSlotIndex);
+            
+            if (wasEmpty && HasOriginalItem)
+            {
+                OnEmptinessChange?.Invoke(this);
+            }
+            else if (wasOriginalItemOwner && IsEmpty)
+            {
+                OnEmptinessChange?.Invoke(this);
+            }
         }
 
         public bool TryConsumeQuantity(int quantity)
@@ -58,7 +80,7 @@ namespace SimpleU.Inventory
 
         public void AddQuantity(int quantity)
         {
-            Quantity += quantity;
+            SetQuantity(this, Quantity + quantity);
         }
 
         public bool IsStackable(IItemAsset itemAsset, int count)
@@ -83,12 +105,12 @@ namespace SimpleU.Inventory
             return GridSlotService.GetIsStackableToTargetGridSlot(this, gridSlot);
         }
 
-        void IServicableGridSlot.SetQuantityItem(QuantityItem quantityItem)
+        void SetQuantityItem(QuantityItem quantityItem)
         {
             _quantityItem = quantityItem;
         }
 
-        void IServicableGridSlot.SetOriginalSlotIndex(int originalSlotIndex)
+        void SetOriginalSlotIndex(int originalSlotIndex)
         {
             _originalSlotIndex = originalSlotIndex;
         }
@@ -112,11 +134,5 @@ namespace SimpleU.Inventory
             }
             gridSlot.OnQuantityChange?.Invoke(gridSlot);
         }
-    }
-
-    public interface IServicableGridSlot : IGridSlot
-    {
-        void SetQuantityItem(QuantityItem quantityItem);
-        void SetOriginalSlotIndex(int originalSlotIndex);
     }
 }
