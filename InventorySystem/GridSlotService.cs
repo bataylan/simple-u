@@ -7,64 +7,6 @@ namespace SimpleU.Inventory
     public static class GridSlotService
     {
         //TODO refactor ref/struct usages
-        public static void SetQuantity(GridSlot gridSlot, int value)
-        {
-            SetQuantityInternal(ref gridSlot, value);
-            gridSlot.OnQuantityChange?.Invoke(gridSlot);
-        }
-
-        
-
-        public static void SetQuantityInternal<TSlot>(ref TSlot gridSlot, int value)
-            where TSlot : IServicableGridSlot
-        {
-            int safeQuantity = Mathf.Max(value, 0);
-            if (safeQuantity == gridSlot.Quantity)
-                return;
-
-            if (safeQuantity <= 0)
-            {
-                gridSlot.SetItem(null, 0);
-            }
-            else
-            {
-                if (gridSlot.QuantityItem == null)
-                    throw new Exception("QuantityItem is null but trying to set quantity!");
-
-                gridSlot.QuantityItem.SetQuantity(safeQuantity);
-            }
-        }
-
-        public static bool GetIsDroppableToTargetSlot(IServicableGridSlot gridSlot, IGridSlot targetSlot)
-        {
-            if (gridSlot.IsEmpty || targetSlot == gridSlot)
-                return true;
-
-            if (gridSlot.IsRelativeSlot && gridSlot.InventoryManager == targetSlot.InventoryManager
-                && gridSlot.OriginalSlotIndex == targetSlot.OriginalSlotIndex)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        public static bool GetIsStackableToTargetGridSlot(IServicableGridSlot gridSlot, IGridSlot targetSlot)
-        {
-            var target = targetSlot as GridSlot;
-            return !gridSlot.IsEmpty && !target.IsEmpty && target.IsStackable(gridSlot.ItemAsset, gridSlot.Quantity);
-        }
-
-        public static bool IsStackable(IServicableGridSlot gridSlot, IItemAsset itemAsset, int count)
-        {
-            return HasCapacity(gridSlot, count) && (gridSlot.IsEmpty || gridSlot.ItemAsset.Equals(itemAsset));
-        }
-
-        public static int LeftCapacity(IServicableGridSlot gridSlot)
-        {
-            return gridSlot.Capacity - gridSlot.Quantity;
-        }
-
         public static void SetItem<TSlot>(ref TSlot gridSlot, IItemAsset itemAsset, int quantity,
             int originalSlotIndex = -1) where TSlot : struct, IServicableGridSlot
         {
@@ -108,8 +50,38 @@ namespace SimpleU.Inventory
 
             gridSlot.SetOriginalSlotIndex(originalSlotIndex);
         }
+        
+        public static bool GetIsDroppableToTargetSlot(this IGridSlot gridSlot, IGridSlot targetSlot)
+        {
+            if (gridSlot.IsEmpty || targetSlot == gridSlot)
+                return true;
 
-        public static bool HasCapacity(IServicableGridSlot gridSlot, int count)
+            if (gridSlot.IsRelativeSlot && gridSlot.InventoryManager == targetSlot.InventoryManager
+                && gridSlot.OriginalSlotIndex == targetSlot.OriginalSlotIndex)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool GetIsStackableToTargetGridSlot(this IGridSlot gridSlot, IGridSlot targetSlot)
+        {
+            var target = targetSlot as GridSlot;
+            return !gridSlot.IsEmpty && !target.IsEmpty && target.IsStackable(gridSlot.ItemAsset, gridSlot.Quantity);
+        }
+
+        public static bool IsStackable(this IGridSlot gridSlot, IItemAsset itemAsset, int count)
+        {
+            return HasCapacity(gridSlot, count) && (gridSlot.IsEmpty || gridSlot.ItemAsset.Equals(itemAsset));
+        }
+
+        public static int LeftCapacity(this IGridSlot gridSlot)
+        {
+            return gridSlot.Capacity - gridSlot.Quantity;
+        }
+        
+        public static bool HasCapacity(this IGridSlot gridSlot, int count)
         {
             return (gridSlot.Quantity + count) <= gridSlot.Capacity;
         }

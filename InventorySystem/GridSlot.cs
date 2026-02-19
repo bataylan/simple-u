@@ -16,7 +16,7 @@ namespace SimpleU.Inventory
         public int Quantity
         {
             get => _quantityItem != null ? _quantityItem.Quantity : 0;
-            private set => GridSlotService.SetQuantity(this, value);
+            private set => SetQuantity(this, value);
         }
         public IItemAsset ItemAsset => _quantityItem != null ? _quantityItem.ItemAsset : default;
         public int OriginalSlotIndex => IsRelativeSlot ? _originalSlotIndex : Index;
@@ -52,7 +52,7 @@ namespace SimpleU.Inventory
             if (quantity <= 0 || Quantity < quantity)
                 return false;
 
-            GridSlotService.SetQuantity(this, Quantity - quantity);
+            SetQuantity(this, Quantity - quantity);
             return true;
         }
 
@@ -93,7 +93,25 @@ namespace SimpleU.Inventory
             _originalSlotIndex = originalSlotIndex;
         }
         
-        
+        public static void SetQuantity(GridSlot gridSlot, int value)
+        {
+            int safeQuantity = Math.Max(value, 0);
+            if (safeQuantity == gridSlot.Quantity)
+                return;
+
+            if (safeQuantity <= 0)
+            {
+                gridSlot.SetItem(null, 0);
+            }
+            else
+            {
+                if (gridSlot.QuantityItem == null)
+                    throw new Exception("QuantityItem is null but trying to set quantity!");
+
+                gridSlot.QuantityItem.SetQuantity(safeQuantity);
+            }
+            gridSlot.OnQuantityChange?.Invoke(gridSlot);
+        }
     }
 
     public interface IServicableGridSlot : IGridSlot
