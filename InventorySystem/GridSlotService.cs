@@ -8,16 +8,7 @@ namespace SimpleU.Inventory
     {
         public static bool GetIsDroppableToTargetSlot(IGridSlot gridSlot, IGridSlot targetSlot)
         {
-            if (gridSlot.IsEmpty || targetSlot == gridSlot)
-                return true;
-
-            if (gridSlot.IsRelativeSlot && gridSlot.InventoryManager == targetSlot.InventoryManager
-                && gridSlot.OriginalSlotIndex == targetSlot.OriginalSlotIndex)
-            {
-                return true;
-            }
-
-            return false;
+            return gridSlot.IsEmpty || targetSlot == gridSlot;
         }
 
         public static bool GetIsStackableToTargetGridSlot(IGridSlot gridSlot, IGridSlot targetSlot)

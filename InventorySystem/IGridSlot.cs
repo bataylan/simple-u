@@ -5,32 +5,30 @@ namespace SimpleU.Inventory
 {
     public interface IGridSlot
     {
-        bool IsEmpty { get; }
-        bool IsFull { get; }
-        bool HasOriginalItem { get; }
+        public bool IsFull => Quantity >= Capacity;
+        public bool IsEmpty => !HasItem;
+        public bool HasItem => QuantityItem.IsValid;
         int Index { get; }
         int RowIndex { get; }
         int ColumnIndex { get; }
-        bool IsRelativeSlot { get; }
-        int OriginalSlotIndex { get; }
         IItemAsset ItemAsset { get; }
         IInventoryManager InventoryManager { get; }
         int Quantity { get; }
         int Capacity { get; }
-        IQuantityItem QuantityItem {get;}
-        
-        void SetItem(IItemAsset itemAsset, int quantity, int originalSlotIndex = -1);
-        void AddQuantity(int quantity);
+        IQuantityItem QuantityItem { get; }
+
+        bool TryConsumeQuantity(int quantity); //TODO limit access internal
+        void SetItem(IItemAsset itemAsset, int quantity); //TODO limit access internal
+        void AddQuantity(int quantity); //TODO limit access internal
         bool IsStackable(IItemAsset itemAsset, int count);
         int LeftCapacity();
         bool GetIsDroppableToTargetSlot(IGridSlot gridSlot);
         bool GetIsStackableToTargetGridSlot(IGridSlot gridSlot);
-        bool TryConsumeQuantity(int quantity);
 
         public static int GetIndexByRowColumnIndex(int rowIndex, int columnIndex, int columnCount)
         {
             return (rowIndex * columnCount) + columnIndex;
         }
     }
-    
+
 }

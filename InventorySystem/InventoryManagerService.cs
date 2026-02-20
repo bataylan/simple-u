@@ -5,355 +5,104 @@ namespace SimpleU.Inventory
 {
     public static class InventoryManagerService
     {
-        public static bool TryAddItemQuantityToSlot(IInventoryManager inventory, IItemAsset inventoryItem, int quantity,
-            int slotIndex, out int leftCount)
-        {
-            leftCount = quantity;
-            if (slotIndex >= inventory.SlotCount)
-                return false;
-
-            var gridSlot = inventory.GridSlots[slotIndex];
-
-            bool canAddItem = CanAddItemQuantityToSlot_Internal(inventoryItem, quantity, gridSlot, out leftCount,
-                out int completedQuantity);
-
-            if (!canAddItem)
-                return false;
-
-            AddItem_Internal(inventory, gridSlot, inventoryItem, completedQuantity);
-
-            return leftCount != quantity;
-        }
-
-        public static bool TryAddItemToSingleSlot(IInventoryManager inventory, IItemAsset inventoryItem, int quantity, out int leftCount,
-            out IGridSlot gridSlot, bool stackItems = true)
-        {
-            bool canAddItem = CanAddItemToSlot(inventory, inventoryItem, quantity, out leftCount,
-                out int completedQuantity, out gridSlot, stackItems);
-
-            if (!canAddItem)
-                return false;
-
-            AddItem_Internal(inventory, gridSlot, inventoryItem, completedQuantity);
-
-            return leftCount != quantity;
-        }
-
-        public static bool TryAddItemQuantitySmart(IInventoryManager inventory, IItemAsset inventoryItem, int quantity,
-            out int leftQuantity)
-        {
-            leftQuantity = quantity;
-
-            if (inventoryItem == null || quantity == 0)
-                return false;
-
-            CheckAddItem_Internal(inventory, inventoryItem, quantity, true, out leftQuantity);
-            return leftQuantity != quantity;
-        }
-
-        private static void AddItem_Internal(IInventoryManager inventory, IGridSlot slotToAdd, IItemAsset itemAsset,
-            int completedQuantity)
-        {
-            if (slotToAdd.IsEmpty)
-            {
-                var quantityItem = new QuantityItem
-                {
-                    itemAsset = itemAsset,
-                    quantity = completedQuantity
-                };
-
-                SetItemToGridSlot(inventory, slotToAdd, quantityItem);
-            }
-            else //stash
-            {
-                slotToAdd.AddQuantity(completedQuantity);
-            }
-        }
-
-        private static void SetItemToGridSlot(IInventoryManager inventory, IGridSlot slotToAdd, IQuantityItem quantityItem)
-        {
-            slotToAdd.SetItem(quantityItem.ItemAsset, quantityItem.Quantity);
-
-            var relativeSlotIndexes = quantityItem.ItemAsset.RelativeSlotIndexes;
-
-            for (int i = 1; i < relativeSlotIndexes.Length; i++)
-            {
-                var relativeRowColumn = relativeSlotIndexes[i];
-                int indexAddition = GetIndexByRowColumnIndex(relativeRowColumn.rowIndex,
-                    relativeRowColumn.columnIndex, inventory.ColumnCount);
-                int index = slotToAdd.Index + indexAddition;
-                var relativeSlot = inventory.GridSlots[index];
-
-                relativeSlot.SetItem(quantityItem.ItemAsset, quantityItem.Quantity, slotToAdd.Index);
-            }
-        }
-
-        public static bool CanAddItemQuantity(IInventoryManager inventory, IItemAsset inventoryItem, 
+        public static bool CanAddItemQuantity(IInventoryManager inventory, IItemAsset inventoryItem,
             int quantity, out int leftQuantity)
         {
-            leftQuantity = quantity;
-
-            if (inventoryItem == null || quantity == 0)
-                return false;
-
             CheckAddItem_Internal(inventory, inventoryItem, quantity, false, out leftQuantity);
             return leftQuantity != quantity;
         }
 
-        public static void CheckAddItem_Internal(IInventoryManager inventory, IItemAsset itemAsset, int quantity,
+        public static bool TryAddItemQuantity(IInventoryManager inventory, IItemAsset inventoryItem, int quantity,
+            out int leftQuantity)
+        {
+            CheckAddItem_Internal(inventory, inventoryItem, quantity, true, out leftQuantity);
+            return leftQuantity != quantity;
+        }
+
+        //current, multiple slot support
+        private static void CheckAddItem_Internal(IInventoryManager inventory, IItemAsset itemAsset, int quantity,
             bool doAdd, out int leftQuantity)
         {
             leftQuantity = quantity;
+
+            if (itemAsset == null || quantity == 0)
+                return;
+
             bool isAdd = quantity > 0;
 
             for (int i = 0; i < inventory.SlotCount; i++)
             {
                 var slot = inventory.GridSlots[i];
-                if (!slot.HasOriginalItem)
-                    continue;
 
-                if (!slot.ItemAsset.Equals(itemAsset))
-                    continue;
-
-                int slotLeftCapacity = isAdd ? slot.LeftCapacity() : slot.Quantity;
-                if (slotLeftCapacity != 0)
-                {
-                    int addedQuantity = 0;
-                    if (!isAdd)
-                        addedQuantity = -Mathf.Min(Mathf.Abs(leftQuantity), slotLeftCapacity);
-                    else
-                        addedQuantity = Mathf.Min(leftQuantity, slotLeftCapacity);
-
-                    leftQuantity -= addedQuantity;
-
-                    if (doAdd)
-                    {
-                        slot.AddQuantity(addedQuantity);
-                    }
-                }
+                CanAddItemToSlot_Internal(slot, itemAsset, isAdd, doAdd, ref leftQuantity);
 
                 if (leftQuantity == 0)
                     break;
             }
+        }
 
-            if (leftQuantity == 0 || !isAdd)
+        private static void CanAddItemToSlot_Internal(IGridSlot slot, IItemAsset itemAsset, bool isAdd, bool doAdd, ref int leftQuantity)
+        {
+            if (slot.HasItem)
+            {
+                CheckStack_Internal(slot, itemAsset, isAdd, doAdd, ref leftQuantity);
+            }
+            else
+            {
+                if (!isAdd)
+                    return;
+
+                CheckSet_Internal(slot, itemAsset, ref leftQuantity);
+            }
+        }
+
+        private static void CheckStack_Internal(IGridSlot slot, IItemAsset itemAsset, bool isAdd, bool doAdd, ref int leftQuantity)
+        {
+            if (isAdd && !itemAsset.IsStackable)
                 return;
 
-            //do add on empty slots
-            for (int i = 0; i < inventory.SlotCount; i++)
+            //try stack on same item
+            if (!slot.ItemAsset.Equals(itemAsset))
+                return;
+
+            int slotLeftCapacity = isAdd ? slot.LeftCapacity() : slot.Quantity;
+            if (slotLeftCapacity <= 0)
+                return;
+
+            int addedQuantity = 0;
+            if (!isAdd)
+                addedQuantity = -Mathf.Min(Mathf.Abs(leftQuantity), slotLeftCapacity);
+            else
+                addedQuantity = Mathf.Min(leftQuantity, slotLeftCapacity);
+
+            if (addedQuantity == 0)
+                return;
+
+            leftQuantity -= addedQuantity;
+
+            if (doAdd)
             {
-                var slot = inventory.GridSlots[i];
-                if (slot.HasOriginalItem)
-                    continue;
-
-                int usedCapacity = Mathf.Min(leftQuantity, slot.Capacity);
-                leftQuantity -= usedCapacity;
-
-                if (doAdd)
-                {
-                    var quantityItem = new QuantityItem()
-                    {
-                        itemAsset = itemAsset,
-                        quantity = usedCapacity
-                    };
-
-                    SetItemToGridSlot(inventory, slot, quantityItem);
-                }
-
-                if (leftQuantity == 0)
-                    break;
-            }
-        }
-
-        public static bool CanAddItemQuantityToSlot_Internal(IItemAsset inventoryItem, int quantity, IGridSlot gridSlot,
-            out int leftQuantity, out int completedQuantity)
-        {
-            leftQuantity = quantity;
-            completedQuantity = 0;
-
-            if (inventoryItem == null || quantity == 0)
-                return false;
-
-            var slotToAdd = gridSlot;
-            if (slotToAdd.IsEmpty)
-            {
-                if (!CheckAddItemToEmptySlot(quantity, slotToAdd, out completedQuantity, out leftQuantity))
-                    return false;
-            }
-            else //try stack
-            {
-                if (!CheckAddItemToStackableSlot(quantity, slotToAdd, out completedQuantity, out leftQuantity))
-                    return false;
+                slot.AddQuantity(addedQuantity);
             }
 
-            return true;
+            return;
         }
 
-        public static bool CanAddItemToSlot(IInventoryManager inventory, IItemAsset inventoryItem,
-            int quantity, out int leftQuantity, out int completedQuantity, out IGridSlot gridSlot,
-            bool stackItems = true)
+        internal static void CheckSet_Internal(IGridSlot slot, IItemAsset itemAsset, ref int leftQuantity)
         {
-            gridSlot = null;
-            leftQuantity = quantity;
-            completedQuantity = 0;
+            //try add on empty slot
+            int usedCapacity = itemAsset.IsStackable ? Mathf.Min(leftQuantity, 1) : Mathf.Min(leftQuantity, slot.Capacity);
+            leftQuantity -= usedCapacity;
 
-            if (inventoryItem == null || quantity == 0)
-                return false;
-
-            if (!TryGetSlotToAdd(inventory, inventoryItem, quantity, stackItems, out IGridSlot slotToAdd))
-                return false;
-
-            if (!CanAddItemQuantityToSlot_Internal(inventoryItem, quantity, slotToAdd, out leftQuantity, out completedQuantity))
-                return false;
-
-            gridSlot = slotToAdd;
-            return true;
-        }
-
-        private static bool CheckAddItemToEmptySlot(int quantity, IGridSlot slotToAdd,
-            out int completedQuantity, out int leftQuantity)
-        {
-            completedQuantity = 0;
-            leftQuantity = quantity;
-
-            if (quantity <= 0 || slotToAdd.Capacity <= 0)
-                return false;
-
-            completedQuantity = Mathf.Min(quantity, slotToAdd.Capacity);
-            leftQuantity = quantity - completedQuantity;
-
-            return leftQuantity != quantity;
-        }
-
-        private static bool CheckAddItemToStackableSlot(int quantity, IGridSlot slotToAdd,
-            out int completedQuantity, out int leftQuantity)
-        {
-            completedQuantity = 0;
-
-            int targetQuantity = slotToAdd.Quantity + quantity;
-            int safeQuantity = Mathf.Clamp(targetQuantity, 0, slotToAdd.Capacity);
-            leftQuantity = targetQuantity - safeQuantity;
-
-            if (leftQuantity == quantity)
-                return false;
-
-            completedQuantity = safeQuantity - slotToAdd.Quantity;
-            return leftQuantity != quantity;
-        }
-
-        private static bool TryGetSlotToAdd(IInventoryManager inventory, IItemAsset itemAsset, int quantity,
-            bool stackItems, out IGridSlot slotToAdd)
-        {
-            slotToAdd = null;
-
-            if (stackItems)
+            var quantityItem = new QuantityItem
             {
-                slotToAdd = GetStackableSlot(inventory, itemAsset, quantity);
-            }
+                itemAsset = itemAsset,
+                quantity = usedCapacity
+            };
 
-            if (slotToAdd != null)
-                return true;
-
-            slotToAdd = GetEmptySuitableSlot(inventory, itemAsset);
-
-            return slotToAdd != null;
+            slot.SetItem(quantityItem.ItemAsset, quantityItem.Quantity);
         }
 
-        private static IGridSlot GetStackableSlot(IInventoryManager inventory, IItemAsset itemAsset, int quantity)
-        {
-            for (int i = 0; i < inventory.SlotCount; i++)
-            {
-                if (IsStackable(inventory, itemAsset, quantity, i))
-                    return inventory.GridSlots[i];
-            }
-
-            return null;
-        }
-
-        private static bool IsStackable(IInventoryManager inventory, IItemAsset itemAsset, int quantity, int slotIndex)
-        {
-            var gridSlot = inventory.GridSlots[slotIndex];
-            if (gridSlot.IsEmpty || gridSlot.IsRelativeSlot)
-                return false;
-
-            return !gridSlot.IsEmpty && !gridSlot.IsRelativeSlot && gridSlot.IsStackable(itemAsset, quantity);
-        }
-
-        private static IGridSlot GetEmptySuitableSlot(IInventoryManager inventory, IItemAsset itemAsset)
-        {
-            var relativeSlotIndexes = itemAsset.RelativeSlotIndexes;
-
-            //check for empty slot
-            for (int i = 0; i < inventory.SlotCount; i++)
-            {
-                if (CheckSlotEmptyAndSuitable(inventory, i, relativeSlotIndexes))
-                {
-                    return inventory.GridSlots[i];
-                }
-            }
-
-            return null;
-        }
-
-        private static bool IsSlotEmpty(IInventoryManager inventory, RowColumnIndex[] relativeSlotIndexes, int slotIndex)
-        {
-            bool isEmptySlotAvailable = true;
-
-            for (int i = 0; i < relativeSlotIndexes.Length; i++)
-            {
-                var relativeRowColumn = relativeSlotIndexes[i];
-
-                int indexAddition = GetIndexByRowColumnIndex(relativeRowColumn.rowIndex,
-                    relativeRowColumn.columnIndex, inventory.ColumnCount);
-                int index = slotIndex + indexAddition;
-
-                if (!inventory.GridSlots[index].IsEmpty)
-                {
-                    isEmptySlotAvailable = false;
-                    break;
-                }
-            }
-
-            return isEmptySlotAvailable;
-        }
-
-        private static bool CheckSlotEmptyAndSuitable(IInventoryManager inventory, int slotIndex, RowColumnIndex[] relativeSlotIndexes)
-        {
-            bool isSlotInsideInventory = IsSlotInsideInventory(inventory, relativeSlotIndexes, slotIndex);
-            bool isEmptySlotAvailable = IsSlotEmpty(inventory, relativeSlotIndexes, slotIndex);
-
-            return isSlotInsideInventory && isEmptySlotAvailable;
-        }
-
-        private static bool IsSlotInsideInventory(IInventoryManager inventory, RowColumnIndex[] relativeSlotIndexes, int slotIndex)
-        {
-            var slot = inventory.GridSlots[slotIndex];
-
-            for (int j = 0; j < relativeSlotIndexes.Length; j++)
-            {
-                var relativeRowColumn = relativeSlotIndexes[j];
-
-                if (slot.ColumnIndex + relativeRowColumn.columnIndex >= inventory.ColumnCount
-                    || slot.RowIndex + relativeRowColumn.rowIndex >= inventory.RowCount)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-        
-        public static int TryGetSlotIndex(IInventoryManager inventory, IItemAsset item)
-        {
-            for (int i = 0; i < inventory.SlotCount; i++)
-            {
-                if (inventory.GridSlots[i].ItemAsset != null && inventory.GridSlots[i].ItemAsset.Equals(item))
-                    return i;
-            }
-
-            return -1;
-        }
-        
         public static bool HasEnoughQuantity(IInventoryManager inventory, IItemAsset itemAsset, int quantity)
         {
             return GetQuantity(inventory, itemAsset) >= quantity;
@@ -368,7 +117,7 @@ namespace SimpleU.Inventory
             for (int i = 0; i < inventory.SlotCount; i++)
             {
                 var slot = inventory.GridSlots[i];
-                if (slot.HasOriginalItem && slot.ItemAsset.Equals(itemAsset))
+                if (slot.HasItem && slot.ItemAsset.Equals(itemAsset))
                 {
                     quantity += slot.Quantity;
                 }

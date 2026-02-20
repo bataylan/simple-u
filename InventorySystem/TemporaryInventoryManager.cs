@@ -29,8 +29,7 @@ namespace SimpleU.Inventory
                     
                     if (!sourceGridSlot.IsEmpty)
                     {
-                        int originalSlotIndex = sourceGridSlot.HasOriginalItem ? -1 : sourceGridSlot.OriginalSlotIndex;
-                        gridSlot.SetItem(sourceGridSlot.ItemAsset, sourceGridSlot.Quantity, originalSlotIndex);
+                        gridSlot.SetItem(sourceGridSlot.ItemAsset, sourceGridSlot.Quantity);
                     }
                     
                     _slots[slotIndex] = gridSlot;
@@ -60,39 +59,14 @@ namespace SimpleU.Inventory
             }
         }
 
-        public bool TryAddItemQuantityToSlot(IItemAsset inventoryItem, int quantity, int slotIndex, out int leftCount)
-        {
-            return InventoryManagerService.TryAddItemQuantityToSlot(this, inventoryItem, quantity, slotIndex, 
-                out leftCount);
-        }
-
-        public bool TryAddItemToSingleSlot(IItemAsset inventoryItem, int quantity, out int leftCount,
-            out IGridSlot gridSlot, bool stackItems = true)
-        {
-            return InventoryManagerService.TryAddItemToSingleSlot(this, inventoryItem, quantity, out leftCount,
-                out gridSlot, stackItems);
-        }
-
         public bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity)
         {
             return InventoryManagerService.CanAddItemQuantity(this, inventoryItem, quantity, out leftQuantity);
         }
 
-        public bool TryAddItemQuantitySmart(IItemAsset inventoryItem, int quantity, out int leftQuantity)
+        public bool TryAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity)
         {
-            return InventoryManagerService.TryAddItemQuantitySmart(this, inventoryItem, quantity, out leftQuantity);
-        }
-
-        public bool CanAddItemFromSingleSlot(IItemAsset inventoryItem, int quantity, out int leftQuantity,
-            out int completedQuantity, out IGridSlot gridSlot, bool stackItems = true)
-        {
-            return InventoryManagerService.CanAddItemToSlot(this, inventoryItem, quantity, out leftQuantity,
-                out completedQuantity, out gridSlot, stackItems);
-        }
-        
-        public int TryGetSlotIndex(IItemAsset item)
-        {
-            return InventoryManagerService.TryGetSlotIndex(this, item);
+            return InventoryManagerService.TryAddItemQuantity(this, inventoryItem, quantity, out leftQuantity);
         }
 
         public bool HasEnoughQuantity(IItemAsset itemAsset, int quantity)
@@ -116,17 +90,14 @@ namespace SimpleU.Inventory
         public int Quantity
         {
             get => _quantityItem != null ? _quantityItem.Quantity : 0;
-            private set => SetItem(_quantityItem.ItemAsset, value, OriginalSlotIndex);
+            private set => SetItem(_quantityItem.ItemAsset, value);
         }
-        public bool IsEmpty => ItemAsset == null || Quantity <= 0;
-        public bool HasOriginalItem => !IsEmpty && !IsRelativeSlot;
+        
         public int Index => _index;
         public int RowIndex => _rowIndex;
         public int ColumnIndex => _columnIndex;
-        public bool IsRelativeSlot => !IsEmpty && _originalSlotIndex >= 0;
         public IInventoryManager InventoryManager => _inventoryManager;
-        public bool IsFull => Quantity >= Capacity;
-        public int OriginalSlotIndex => _originalSlotIndex;
+        
         public IItemAsset ItemAsset => _quantityItem != null ? _quantityItem.ItemAsset : default;
         public int Capacity => _capacity;
         public IQuantityItem QuantityItem => _quantityItem;
@@ -151,7 +122,7 @@ namespace SimpleU.Inventory
             _quantityItem = null;
         }
 
-        public void SetItem(IItemAsset itemAsset, int quantity, int originalSlotIndex = -1)
+        public void SetItem(IItemAsset itemAsset, int quantity)
         {
             if (itemAsset == null)
             {
@@ -166,8 +137,6 @@ namespace SimpleU.Inventory
                 };
                 SetQuantityItem(quantityItem);
             }
-
-            SetOriginalSlotIndex(originalSlotIndex);
         }
 
         public bool TryConsumeQuantity(int quantity)
@@ -175,7 +144,7 @@ namespace SimpleU.Inventory
             if (quantity <= 0 || Quantity < quantity)
                 return false;
 
-            SetItem(_quantityItem.ItemAsset, Quantity - quantity, OriginalSlotIndex);
+            SetItem(_quantityItem.ItemAsset, Quantity - quantity);
             return true;
         }
 

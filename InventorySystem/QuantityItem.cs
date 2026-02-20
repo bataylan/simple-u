@@ -8,7 +8,7 @@ namespace SimpleU.Inventory
 {
     public interface IQuantityItem
     {
-        bool Valid { get; }
+        bool IsValid { get; }
         IItemAsset ItemAsset { get; }
         int Quantity { get; }
 
@@ -23,7 +23,7 @@ namespace SimpleU.Inventory
 
         public IItemAsset ItemAsset => itemAsset;
         public int Quantity => quantity;
-        public bool Valid => itemAsset != null && quantity > 0;
+        public bool IsValid => itemAsset != null && quantity > 0;
 
         public void SetQuantity(int quantity)
         {

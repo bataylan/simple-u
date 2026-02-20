@@ -5,23 +5,20 @@ namespace SimpleU.Inventory
 {
     public class GridSlot : IGridSlot
     {
-        public bool IsEmpty => ItemAsset == null || Quantity <= 0;
-        public bool HasOriginalItem => !IsEmpty && !IsRelativeSlot;
-        public int Index => _index;
+        public bool IsEmpty => !HasItem;
+        public bool HasItem => QuantityItem.IsValid;
+        public int Index => _slotIndex;
         public int RowIndex => _rowIndex;
         public int ColumnIndex => _columnIndex;
-        public bool IsRelativeSlot => !IsEmpty && _originalSlotIndex >= 0;
         public IInventoryManager InventoryManager => _inventoryManager;
         public bool IsFull => Quantity >= Capacity;
         public int Quantity => _quantityItem != null ? _quantityItem.Quantity : 0;
         public IItemAsset ItemAsset => _quantityItem != null ? _quantityItem.ItemAsset : default;
-        public int OriginalSlotIndex => IsRelativeSlot ? _originalSlotIndex : Index;
         public IQuantityItem QuantityItem => _quantityItem;
         public int Capacity => _capacity;
 
-        private int _originalSlotIndex;
         private IInventoryManager _inventoryManager;
-        private int _index, _rowIndex, _columnIndex;
+        private int _slotIndex, _rowIndex, _columnIndex;
         private IQuantityItem _quantityItem;
         private int _capacity;
 
@@ -32,26 +29,23 @@ namespace SimpleU.Inventory
             int capacity = int.MaxValue)
         {
             _inventoryManager = inventoryManager;
-            _index = index;
+            _slotIndex = index;
             _rowIndex = rowIndex;
             _columnIndex = columnIndex;
             _capacity = capacity;
         }
 
-        public void SetItem(IItemAsset itemAsset, int quantity, int originalSlotIndex = -1)
+        public virtual void SetItem(IItemAsset itemAsset, int quantity)
         {
             bool wasEmpty = IsEmpty;
-            bool wasOriginalItemOwner = HasOriginalItem;
 
             SetItem_Internal(itemAsset, quantity);
 
-            SetOriginalSlotIndex(originalSlotIndex);
-
-            if (wasEmpty && HasOriginalItem)
+            if (wasEmpty)
             {
                 OnEmptinessChange?.Invoke(this);
             }
-            else if (wasOriginalItemOwner && IsEmpty)
+            else if (IsEmpty)
             {
                 OnEmptinessChange?.Invoke(this);
             }
@@ -115,11 +109,6 @@ namespace SimpleU.Inventory
             _quantityItem = quantityItem;
         }
 
-        void SetOriginalSlotIndex(int originalSlotIndex)
-        {
-            _originalSlotIndex = originalSlotIndex;
-        }
-        
         public static void SetQuantity(GridSlot gridSlot, int value)
         {
             int safeQuantity = Math.Max(value, 0);

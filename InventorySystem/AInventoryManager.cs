@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace SimpleU.Inventory
 {
+    //TODO add tests
     public class AInventoryManager : IInventoryManager
     {
         public AInventoryManager(int rowCount, int columnCount, int slotCapacity = 0)
@@ -46,17 +47,14 @@ namespace SimpleU.Inventory
             }
         }
 
-        public virtual bool TryAddItemQuantityToSlot(IItemAsset inventoryItem, int quantity, int slotIndex, out int leftCount)
+        protected void SetItem(int index, IItemAsset itemAsset, int quantity)
         {
-            return InventoryManagerService.TryAddItemQuantityToSlot(this, inventoryItem, quantity, slotIndex, 
-                out leftCount);
-        }
-
-        public virtual bool TryAddItemToSingleSlot(IItemAsset inventoryItem, int quantity, out int leftCount,
-            out IGridSlot gridSlot, bool stackItems = true)
-        {
-            return InventoryManagerService.TryAddItemToSingleSlot(this, inventoryItem, quantity, out leftCount,
-                out gridSlot, stackItems);
+            int leftQuantity = quantity;
+            InventoryManagerService.CheckSet_Internal(_slots[index], itemAsset, ref leftQuantity);
+            if (leftQuantity != 0)
+            {
+                Debug.Log("Failed to set item to slot!");
+            }
         }
 
         public virtual bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity)
@@ -64,21 +62,9 @@ namespace SimpleU.Inventory
             return InventoryManagerService.CanAddItemQuantity(this, inventoryItem, quantity, out leftQuantity);
         }
 
-        public virtual bool TryAddItemQuantitySmart(IItemAsset inventoryItem, int quantity, out int leftQuantity)
+        public virtual bool TryAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity)
         {
-            return InventoryManagerService.TryAddItemQuantitySmart(this, inventoryItem, quantity, out leftQuantity);
-        }
-
-        public bool CanAddItemFromSingleSlot(IItemAsset inventoryItem, int quantity, out int leftQuantity,
-            out int completedQuantity, out IGridSlot gridSlot, bool stackItems = true)
-        {
-            return InventoryManagerService.CanAddItemToSlot(this, inventoryItem, quantity, out leftQuantity,
-                out completedQuantity, out gridSlot, stackItems);
-        }
-        
-        public int TryGetSlotIndex(IItemAsset item)
-        {
-            return InventoryManagerService.TryGetSlotIndex(this, item);
+            return InventoryManagerService.TryAddItemQuantity(this, inventoryItem, quantity, out leftQuantity);
         }
 
         public bool HasEnoughQuantity(IItemAsset itemAsset, int quantity)
@@ -98,14 +84,9 @@ namespace SimpleU.Inventory
         int ColumnCount { get; }
         int RowCount { get; }
         IGridSlot[] GridSlots { get; }
-        int TryGetSlotIndex(IItemAsset item);
+        bool TryAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity);
+        bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity);
         bool HasEnoughQuantity(IItemAsset itemAsset, int quantity);
         int GetQuantity(IItemAsset itemAsset);
-        bool CanAddItemFromSingleSlot(IItemAsset inventoryItem, int quantity, out int leftQuantity,
-            out int completedQuantity, out IGridSlot gridSlot, bool stackItems = true);
-        bool TryAddItemToSingleSlot(IItemAsset inventoryItem, int quantity, out int leftCount, out IGridSlot gridSlot, bool stackItems = true);
-        bool TryAddItemQuantityToSlot(IItemAsset item, int quantity, int slotIndex, out int leftQuantity);
-        bool TryAddItemQuantitySmart(IItemAsset inventoryItem, int quantity, out int leftQuantity);
-        bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity);
     }
 }
