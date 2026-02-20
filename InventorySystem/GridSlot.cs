@@ -42,7 +42,23 @@ namespace SimpleU.Inventory
         {
             bool wasEmpty = IsEmpty;
             bool wasOriginalItemOwner = HasOriginalItem;
-            
+
+            SetItem_Internal(itemAsset, quantity);
+
+            SetOriginalSlotIndex(originalSlotIndex);
+
+            if (wasEmpty && HasOriginalItem)
+            {
+                OnEmptinessChange?.Invoke(this);
+            }
+            else if (wasOriginalItemOwner && IsEmpty)
+            {
+                OnEmptinessChange?.Invoke(this);
+            }
+        }
+
+        protected virtual void SetItem_Internal(IItemAsset itemAsset, int quantity)
+        {
             if (itemAsset == null)
             {
                 SetQuantityItem(default);
@@ -55,17 +71,6 @@ namespace SimpleU.Inventory
                     quantity = quantity
                 };
                 SetQuantityItem(quantityItem);
-            }
-
-            SetOriginalSlotIndex(originalSlotIndex);
-            
-            if (wasEmpty && HasOriginalItem)
-            {
-                OnEmptinessChange?.Invoke(this);
-            }
-            else if (wasOriginalItemOwner && IsEmpty)
-            {
-                OnEmptinessChange?.Invoke(this);
             }
         }
 
