@@ -28,12 +28,22 @@ namespace SimpleU.SaveSystem
             
             return instance;
         }
-        
-        private static string GetFolderPath()
+
+        public static string GetFolderPath()
         {
             return Path.Combine(Application.persistentDataPath, "Saves");
         }
-        
+
+        public static string GetCurrentSaveFilePath()
+        {
+            return GetFilePath(GetSaveFileName());
+        }
+
+        public static string GetFilePath(string fileName)
+        {
+            return SaveFileHandler.GetFilePath(GetFolderPath(), fileName);
+        }
+
         public static SaveFileHandler GetSaveFileHandler()
         {
             return new SaveFileHandler(GetFolderPath(), GetSaveFileName());
@@ -43,10 +53,10 @@ namespace SimpleU.SaveSystem
         {
             return PlayerPrefs.GetString(CSaveFileNameKey, "progress");
         }
-        
-        private static string GetSaveFileFullPath()
+
+        public static string GetSaveFileWithExtension()
         {
-            return PlayerPrefs.GetString(CSaveFileNameKey, "progress") + SaveFileHandler.CFileExtension;
+            return SaveFileHandler.EnsureFileExtension(PlayerPrefs.GetString(CSaveFileNameKey, "progress"));
         }
 
         private SaveManager()
@@ -66,10 +76,8 @@ namespace SimpleU.SaveSystem
                     return false;
             }
 
-            if (fileName.Contains(SaveFileHandler.CFileExtension))
-                fileName = fileName.Substring(0, fileName.Length - SaveFileHandler.CFileExtension.Length);
-                
-            PlayerPrefs.SetString(CSaveFileNameKey, fileName);
+            var fileNameWithExtension = SaveFileHandler.EnsureFileExtension(fileName);
+            PlayerPrefs.SetString(CSaveFileNameKey, fileNameWithExtension);
             
             _saveFileHandler.Dispose();
             _saveFileHandler = null;
@@ -88,7 +96,7 @@ namespace SimpleU.SaveSystem
         public SaveFileInfo GetCurrentSaveFileInfo()
         {
             string folderPath = GetFolderPath();
-            var fileInfo = new FileInfo(Path.Combine(folderPath, GetSaveFileFullPath()));
+            var fileInfo = new FileInfo(Path.Combine(folderPath, GetSaveFileWithExtension()));
             return new SaveFileInfo
             {
                 FileName = fileInfo.Name,

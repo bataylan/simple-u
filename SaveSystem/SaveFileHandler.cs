@@ -13,7 +13,7 @@ namespace SimpleU.SaveSystem
     /// </summary>
     public class SaveFileHandler : IDisposable
     {
-        public const string CFileExtension = ".dat";
+        private const string CFileExtension = ".dat";
 
         private string _filePath;
         private Dictionary<string, InstanceSave> _instanceSaves;
@@ -46,7 +46,13 @@ namespace SimpleU.SaveSystem
 
             ReadSaveFile();
         }
-
+        
+        public static string GetFilePath(string folderPath, string fileName)
+        {
+            fileName = EnsureFileExtension(fileName);
+            return Path.Combine(folderPath, fileName);
+        }
+        
         public bool TryCopyFileToNewPath(string fileName)
         {
             fileName = EnsureFileExtension(fileName);
@@ -61,7 +67,7 @@ namespace SimpleU.SaveSystem
             return true;
         }
         
-        private string EnsureFileExtension(string fileName)
+        public static string EnsureFileExtension(string fileName)
         {
             if (fileName.Contains(CFileExtension))
                 return fileName;
