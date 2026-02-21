@@ -19,11 +19,12 @@ namespace SimpleU.SaveSystem
 
         public static SaveManager Get()
         {
-            if (LevelContext.Get().ExtraData.TryGetExtra(CKey, out SaveManager instance))
+            var context = LevelContext.Get();
+            if (context.ExtraData.TryGetExtra(CKey, out SaveManager instance))
                 return instance;
 
             instance = new SaveManager();
-            LevelContext.Get().ExtraData.SetExtra(CKey, instance);
+            context.ExtraData.SetExtra(CKey, instance);
             
             return instance;
         }
