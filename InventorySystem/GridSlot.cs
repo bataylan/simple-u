@@ -3,10 +3,10 @@ using SimpleU.DataContainer;
 
 namespace SimpleU.Inventory
 {
-    public class GridSlot : IGridSlot
+    public class GridSlot : IManagedGridSlot
     {
         public bool IsEmpty => !HasItem;
-        public bool HasItem => QuantityItem.IsValid;
+        public bool HasItem => Quantity > 0 && ItemAsset != null;
         public int Index => _slotIndex;
         public int RowIndex => _rowIndex;
         public int ColumnIndex => _columnIndex;
@@ -35,24 +35,15 @@ namespace SimpleU.Inventory
             _capacity = capacity;
         }
 
-        public virtual void SetItem(IItemAsset itemAsset, int quantity)
+        void IManagedGridSlot.SetItem(IItemAsset itemAsset, int quantity)
         {
-            bool wasEmpty = IsEmpty;
-
             SetItem_Internal(itemAsset, quantity);
-
-            if (wasEmpty)
-            {
-                OnEmptinessChange?.Invoke(this);
-            }
-            else if (IsEmpty)
-            {
-                OnEmptinessChange?.Invoke(this);
-            }
         }
 
         protected virtual void SetItem_Internal(IItemAsset itemAsset, int quantity)
         {
+            bool wasEmpty = IsEmpty;
+
             if (itemAsset == null)
             {
                 SetQuantityItem(default);
@@ -64,22 +55,43 @@ namespace SimpleU.Inventory
                     itemAsset = itemAsset,
                     quantity = quantity
                 };
-                SetQuantityItem(quantityItem);
+                _quantityItem = quantityItem;
+            }
+
+            if (wasEmpty)
+            {
+                OnEmptinessChange?.Invoke(this);
+            }
+            else if (IsEmpty)
+            {
+                OnEmptinessChange?.Invoke(this);
             }
         }
 
-        public bool TryConsumeQuantity(int quantity)
+        void IManagedGridSlot.AddQuantity(int quantity)
         {
-            if (quantity <= 0 || Quantity < quantity)
-                return false;
-
-            SetQuantity(this, Quantity - quantity);
-            return true;
+            AddQuantity_Internal(quantity);
         }
-
-        public void AddQuantity(int quantity)
+        
+        protected virtual void AddQuantity_Internal(int quantity)
         {
-            SetQuantity(this, Quantity + quantity);
+            int value = Quantity + quantity;
+            int safeQuantity = Math.Max(value, 0);
+            if (safeQuantity == Quantity)
+                return;
+
+            if (safeQuantity <= 0)
+            {
+                ((IManagedGridSlot)this).SetItem(null, 0);
+            }
+            else
+            {
+                if (QuantityItem == null)
+                    throw new Exception("QuantityItem is null but trying to set quantity!");
+
+                QuantityItem.SetQuantity(safeQuantity);
+            }
+            OnQuantityChange?.Invoke(this);
         }
 
         public bool IsStackable(IItemAsset itemAsset, int count)
@@ -104,29 +116,9 @@ namespace SimpleU.Inventory
             return GridSlotService.GetIsStackableToTargetGridSlot(this, gridSlot);
         }
 
-        void SetQuantityItem(QuantityItem quantityItem)
+        protected void SetQuantityItem(QuantityItem quantityItem)
         {
             _quantityItem = quantityItem;
-        }
-
-        public static void SetQuantity(GridSlot gridSlot, int value)
-        {
-            int safeQuantity = Math.Max(value, 0);
-            if (safeQuantity == gridSlot.Quantity)
-                return;
-
-            if (safeQuantity <= 0)
-            {
-                gridSlot.SetItem(null, 0);
-            }
-            else
-            {
-                if (gridSlot.QuantityItem == null)
-                    throw new Exception("QuantityItem is null but trying to set quantity!");
-
-                gridSlot.QuantityItem.SetQuantity(safeQuantity);
-            }
-            gridSlot.OnQuantityChange?.Invoke(gridSlot);
         }
     }
 }

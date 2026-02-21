@@ -5,23 +5,41 @@ namespace SimpleU.Inventory
 {
     public static class InventoryManagerService
     {
-        public static bool CanAddItemQuantity(IInventoryManager inventory, IItemAsset inventoryItem,
-            int quantity, out int leftQuantity)
+        public static bool CanAddItemQuantity(IManagedInventoryManager inventory, IItemAsset inventoryItem,
+            int quantity, out int leftQuantity, bool returnCompletedAll = true)
         {
             CheckAddItem_Internal(inventory, inventoryItem, quantity, false, out leftQuantity);
-            return leftQuantity != quantity;
+            return returnCompletedAll ? leftQuantity == 0 : leftQuantity != quantity;
         }
 
-        public static bool TryAddItemQuantity(IInventoryManager inventory, IItemAsset inventoryItem, int quantity,
-            out int leftQuantity)
+        public static bool TryAddItemQuantity(IManagedInventoryManager inventory, IItemAsset inventoryItem, int quantity,
+            out int leftQuantity, bool returnCompletedAll = true)
         {
             CheckAddItem_Internal(inventory, inventoryItem, quantity, true, out leftQuantity);
-            return leftQuantity != quantity;
+            return returnCompletedAll ? leftQuantity == 0 : leftQuantity != quantity;
+        }
+
+        public static bool CanAddItemToSlot(IGridSlot slot, IItemAsset itemAsset,
+            int quantity, out int leftQuantity, bool returnCompletedAll = true)
+        {
+            int refLeftQuantity = quantity;
+            CanAddItemToSlot_Internal(slot as IManagedGridSlot, itemAsset, quantity > 0, false, ref refLeftQuantity);
+            leftQuantity = refLeftQuantity;
+            return returnCompletedAll ? leftQuantity == 0 : leftQuantity != quantity;
+        }
+
+        public static bool TryAddItemToSlot(IGridSlot slot, IItemAsset itemAsset,
+            int quantity, out int leftQuantity, bool returnCompletedAll = true)
+        {
+            int refLeftQuantity = quantity;
+            CanAddItemToSlot_Internal(slot as IManagedGridSlot, itemAsset, quantity > 0, true, ref refLeftQuantity);
+            leftQuantity = refLeftQuantity;
+            return returnCompletedAll ? leftQuantity == 0 : leftQuantity != quantity;
         }
 
         //current, multiple slot support
-        private static void CheckAddItem_Internal(IInventoryManager inventory, IItemAsset itemAsset, int quantity,
-            bool doAdd, out int leftQuantity)
+        private static void CheckAddItem_Internal(IManagedInventoryManager inventory, IItemAsset itemAsset,
+            int quantity, bool doAdd, out int leftQuantity)
         {
             leftQuantity = quantity;
 
@@ -32,7 +50,7 @@ namespace SimpleU.Inventory
 
             for (int i = 0; i < inventory.SlotCount; i++)
             {
-                var slot = inventory.GridSlots[i];
+                var slot = inventory.ManagedGridSlots[i];
 
                 CanAddItemToSlot_Internal(slot, itemAsset, isAdd, doAdd, ref leftQuantity);
 
@@ -41,7 +59,8 @@ namespace SimpleU.Inventory
             }
         }
 
-        private static void CanAddItemToSlot_Internal(IGridSlot slot, IItemAsset itemAsset, bool isAdd, bool doAdd, ref int leftQuantity)
+        private static void CanAddItemToSlot_Internal(IManagedGridSlot slot, IItemAsset itemAsset,
+            bool isAdd, bool doAdd, ref int leftQuantity)
         {
             if (slot.HasItem)
             {
@@ -52,11 +71,11 @@ namespace SimpleU.Inventory
                 if (!isAdd)
                     return;
 
-                CheckSet_Internal(slot, itemAsset, ref leftQuantity);
+                CheckSet_Internal(slot, itemAsset, doAdd, ref leftQuantity);
             }
         }
 
-        private static void CheckStack_Internal(IGridSlot slot, IItemAsset itemAsset, bool isAdd, bool doAdd, ref int leftQuantity)
+        private static void CheckStack_Internal(IManagedGridSlot slot, IItemAsset itemAsset, bool isAdd, bool doAdd, ref int leftQuantity)
         {
             if (isAdd && !itemAsset.IsStackable)
                 return;
@@ -88,27 +107,24 @@ namespace SimpleU.Inventory
             return;
         }
 
-        internal static void CheckSet_Internal(IGridSlot slot, IItemAsset itemAsset, ref int leftQuantity)
+        internal static void CheckSet_Internal(IManagedGridSlot slot, IItemAsset itemAsset, bool doAdd, ref int leftQuantity)
         {
-            //try add on empty slot
-            int usedCapacity = itemAsset.IsStackable ? Mathf.Min(leftQuantity, 1) : Mathf.Min(leftQuantity, slot.Capacity);
+            //try add on empty slotq
+            int usedCapacity = itemAsset != null && !itemAsset.IsStackable ? Mathf.Min(leftQuantity, 1) : Mathf.Min(leftQuantity, slot.Capacity);
             leftQuantity -= usedCapacity;
 
-            var quantityItem = new QuantityItem
+            if (doAdd)
             {
-                itemAsset = itemAsset,
-                quantity = usedCapacity
-            };
-
-            slot.SetItem(quantityItem.ItemAsset, quantityItem.Quantity);
+                slot.SetItem(itemAsset, usedCapacity);
+            }
         }
 
-        public static bool HasEnoughQuantity(IInventoryManager inventory, IItemAsset itemAsset, int quantity)
+        public static bool HasEnoughQuantity(IManagedInventoryManager inventory, IItemAsset itemAsset, int quantity)
         {
             return GetQuantity(inventory, itemAsset) >= quantity;
         }
 
-        public static int GetQuantity(IInventoryManager inventory, IItemAsset itemAsset)
+        public static int GetQuantity(IManagedInventoryManager inventory, IItemAsset itemAsset)
         {
             if (itemAsset == null)
                 return 0;
@@ -116,7 +132,7 @@ namespace SimpleU.Inventory
             int quantity = 0;
             for (int i = 0; i < inventory.SlotCount; i++)
             {
-                var slot = inventory.GridSlots[i];
+                var slot = inventory.ManagedGridSlots[i];
                 if (slot.HasItem && slot.ItemAsset.Equals(itemAsset))
                 {
                     quantity += slot.Quantity;
@@ -127,6 +143,6 @@ namespace SimpleU.Inventory
         }
 
         public static int GetIndexByRowColumnIndex(int rowIndex, int columnIndex, int columnCount)
-            => IGridSlot.GetIndexByRowColumnIndex(rowIndex, columnIndex, columnCount);
+            => IManagedGridSlot.GetIndexByRowColumnIndex(rowIndex, columnIndex, columnCount);
     }
 }

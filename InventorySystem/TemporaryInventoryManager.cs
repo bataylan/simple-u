@@ -3,21 +3,22 @@ using SimpleU.DataContainer;
 
 namespace SimpleU.Inventory
 {
-    public struct TemporaryInventoryManager : IInventoryManager, IDisposable
+    public struct TemporaryInventoryManager : IManagedInventoryManager, IDisposable
     {
         public int SlotCount => _slots != null ? _slots.Length : 0;
         public int ColumnCount { get; private set; }
         public int RowCount { get; private set; }
 
-        private IGridSlot[] _slots;
         public IGridSlot[] GridSlots => _slots;
+        IManagedGridSlot[] IManagedInventoryManager.ManagedGridSlots => _slots;
+        private IManagedGridSlot[] _slots;
 
         public TemporaryInventoryManager(IInventoryManager inventoryManager)
         {
             RowCount = inventoryManager.RowCount;
             ColumnCount = inventoryManager.ColumnCount;
 
-            _slots = new IGridSlot[ColumnCount * RowCount];
+            _slots = new IManagedGridSlot[ColumnCount * RowCount];
 
             int slotIndex = 0;
             for (int i = 0; i < RowCount; i++)
@@ -43,7 +44,7 @@ namespace SimpleU.Inventory
             RowCount = rowCount;
             ColumnCount = columnCount;
 
-            _slots = new IGridSlot[ColumnCount * RowCount];
+            _slots = new IManagedGridSlot[ColumnCount * RowCount];
 
             if (slotCapacity <= 0)
                 slotCapacity = int.MaxValue;
@@ -59,14 +60,31 @@ namespace SimpleU.Inventory
             }
         }
 
-        public bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity)
+        public bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity,
+            bool returnCompletedAll)
         {
-            return InventoryManagerService.CanAddItemQuantity(this, inventoryItem, quantity, out leftQuantity);
+            return InventoryManagerService.CanAddItemQuantity(this, inventoryItem, quantity, out leftQuantity,
+                returnCompletedAll);
         }
 
-        public bool TryAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity)
+        public bool TryAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity,
+            bool returnCompletedAll = true)
         {
-            return InventoryManagerService.TryAddItemQuantity(this, inventoryItem, quantity, out leftQuantity);
+            return InventoryManagerService.TryAddItemQuantity(this, inventoryItem, quantity, out leftQuantity,
+                returnCompletedAll);
+        }
+        
+        public bool TryAddItemToSlot(IGridSlot slot, IItemAsset itemAsset, int quantity, 
+            out int leftQuantity, bool returnCompletedAll = true)
+        {
+            return InventoryManagerService.TryAddItemToSlot(slot, itemAsset, quantity,  
+                out leftQuantity, returnCompletedAll);
+        }
+        public bool CanAddItemToSlot(IGridSlot slot, IItemAsset itemAsset, int quantity, 
+            out int leftQuantity, bool returnCompletedAll = true)
+        {
+            return InventoryManagerService.CanAddItemToSlot(slot, itemAsset, quantity,  
+                out leftQuantity, returnCompletedAll);
         }
 
         public bool HasEnoughQuantity(IItemAsset itemAsset, int quantity)
@@ -85,7 +103,7 @@ namespace SimpleU.Inventory
         }
     }
 
-    public struct TemporaryGrid : IGridSlot
+    public struct TemporaryGrid : IManagedGridSlot
     {
         public int Quantity
         {
@@ -139,15 +157,6 @@ namespace SimpleU.Inventory
             }
         }
 
-        public bool TryConsumeQuantity(int quantity)
-        {
-            if (quantity <= 0 || Quantity < quantity)
-                return false;
-
-            SetItem(_quantityItem.ItemAsset, Quantity - quantity);
-            return true;
-        }
-
         public void AddQuantity(int quantity)
         {
             Quantity += quantity;
@@ -178,11 +187,6 @@ namespace SimpleU.Inventory
         void SetQuantityItem(QuantityItem quantityItem)
         {
             _quantityItem = quantityItem;
-        }
-
-        void SetOriginalSlotIndex(int originalSlotIndex)
-        {
-            _originalSlotIndex = originalSlotIndex;
         }
     }
 }

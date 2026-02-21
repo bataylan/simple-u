@@ -17,9 +17,7 @@ namespace SimpleU.Inventory
         int Capacity { get; }
         IQuantityItem QuantityItem { get; }
 
-        bool TryConsumeQuantity(int quantity); //TODO limit access internal
-        void SetItem(IItemAsset itemAsset, int quantity); //TODO limit access internal
-        void AddQuantity(int quantity); //TODO limit access internal
+        
         bool IsStackable(IItemAsset itemAsset, int count);
         int LeftCapacity();
         bool GetIsDroppableToTargetSlot(IGridSlot gridSlot);
@@ -30,5 +28,10 @@ namespace SimpleU.Inventory
             return (rowIndex * columnCount) + columnIndex;
         }
     }
-
+    
+    public interface IManagedGridSlot : IGridSlot
+    {
+        void SetItem(IItemAsset itemAsset, int quantity);
+        void AddQuantity(int quantity);
+    }
 }
