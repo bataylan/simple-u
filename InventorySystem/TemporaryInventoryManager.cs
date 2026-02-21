@@ -86,6 +86,13 @@ namespace SimpleU.Inventory
             return InventoryManagerService.CanAddItemToSlot(slot, itemAsset, quantity,  
                 out leftQuantity, returnCompletedAll);
         }
+        
+        public bool TryMoveItem(IManagedInventoryManager sourceInventory, IManagedInventoryManager targetInventory, 
+            IItemAsset itemAsset, int quantity, out int leftQuantity, bool returnCompletedAll = true)
+        {
+            return InventoryManagerService.TryMoveItem(sourceInventory, targetInventory, itemAsset, quantity, 
+                out leftQuantity, returnCompletedAll);
+        }
 
         public bool HasEnoughQuantity(IItemAsset itemAsset, int quantity)
         {
@@ -140,7 +147,7 @@ namespace SimpleU.Inventory
             _quantityItem = null;
         }
 
-        public void SetItem(IItemAsset itemAsset, int quantity)
+        public void SetItem(IItemAsset itemAsset, int quantity, object setData = null)
         {
             if (itemAsset == null)
             {
@@ -157,10 +164,12 @@ namespace SimpleU.Inventory
             }
         }
 
-        public void AddQuantity(int quantity)
+        public void AddQuantity(int quantity, object setData = null)
         {
             Quantity += quantity;
         }
+        
+        public object GetData() => null;
 
         public bool IsStackable(IItemAsset itemAsset, int count)
         {

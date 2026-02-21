@@ -27,11 +27,14 @@ namespace SimpleU.Inventory
         {
             return (rowIndex * columnCount) + columnIndex;
         }
+
+        
     }
     
     public interface IManagedGridSlot : IGridSlot
     {
-        void SetItem(IItemAsset itemAsset, int quantity);
-        void AddQuantity(int quantity);
+        void SetItem(IItemAsset itemAsset, int quantity, object setData = null);
+        
+        void CheckAddQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity, bool apply, out int leftQuantity);
     }
 }

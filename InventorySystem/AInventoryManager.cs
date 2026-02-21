@@ -84,6 +84,13 @@ namespace SimpleU.Inventory
                 out leftQuantity, returnCompletedAll);
         }
 
+        public virtual bool TryMoveItem(IInventoryManager targetInventory, 
+            IItemAsset itemAsset, int quantity, out int leftQuantity, bool returnCompletedAll = true)
+        {
+            return InventoryManagerService.TryMoveItem(this, (IManagedInventoryManager)targetInventory, itemAsset, quantity, 
+                out leftQuantity, returnCompletedAll);
+        }
+
         public bool HasEnoughQuantity(IItemAsset itemAsset, int quantity)
         {
             return InventoryManagerService.HasEnoughQuantity(this, itemAsset, quantity);
@@ -107,6 +114,8 @@ namespace SimpleU.Inventory
             out int leftQuantity, bool returnCompletedAll = true);
         bool CanAddItemToSlot(IGridSlot slot, IItemAsset itemAsset, int quantity, 
             out int leftQuantity, bool returnCompletedAll = true);
+        bool TryMoveItem(IInventoryManager targetInventory, 
+            IItemAsset itemAsset, int quantity, out int leftQuantity, bool returnCompletedAll = true);
         bool HasEnoughQuantity(IItemAsset itemAsset, int quantity);
         int GetQuantity(IItemAsset itemAsset);
     }

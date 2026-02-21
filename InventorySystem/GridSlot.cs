@@ -1,5 +1,6 @@
 using System;
 using SimpleU.DataContainer;
+using UnityEngine;
 
 namespace SimpleU.Inventory
 {
@@ -35,12 +36,12 @@ namespace SimpleU.Inventory
             _capacity = capacity;
         }
 
-        void IManagedGridSlot.SetItem(IItemAsset itemAsset, int quantity)
+        void IManagedGridSlot.SetItem(IItemAsset itemAsset, int quantity, object setData)
         {
-            SetItem_Internal(itemAsset, quantity);
+            SetItem(itemAsset, quantity, setData);
         }
 
-        protected virtual void SetItem_Internal(IItemAsset itemAsset, int quantity)
+        protected virtual void SetItem(IItemAsset itemAsset, int quantity, object setData)
         {
             bool wasEmpty = IsEmpty;
 
@@ -68,12 +69,12 @@ namespace SimpleU.Inventory
             }
         }
 
-        void IManagedGridSlot.AddQuantity(int quantity)
+        void IManagedGridSlot.AddQuantity(int quantity, object setData)
         {
-            AddQuantity_Internal(quantity);
+            AddQuantity(quantity, setData);
         }
         
-        protected virtual void AddQuantity_Internal(int quantity)
+        protected virtual void AddQuantity(int quantity, object setData)
         {
             int value = Quantity + quantity;
             int safeQuantity = Math.Max(value, 0);
@@ -92,6 +93,80 @@ namespace SimpleU.Inventory
                 QuantityItem.SetQuantity(safeQuantity);
             }
             OnQuantityChange?.Invoke(this);
+        }
+
+        void IManagedGridSlot.CheckAddItem(IItemAsset itemAsset, int quantity, bool apply, out int leftQuantity,
+            IManagedGridSlot sourceSlot)
+        {
+            leftQuantity = quantity;
+            
+            bool isAdd = quantity > 0;
+            if (HasItem)
+            {
+                CheckStack_Internal(itemAsset, isAdd, apply, ref leftQuantity, sourceSlot);
+            }
+            else
+            {
+                if (!isAdd)
+                    return;
+
+                CheckSet_Internal(itemAsset, apply, ref leftQuantity, sourceSlot);
+            }
+        }
+        
+        void CheckStack_Internal(IItemAsset itemAsset, bool isAdd, bool apply, ref int leftQuantity, 
+            IManagedGridSlot sourceSlot)
+        {
+            if (isAdd && !itemAsset.IsStackable)
+                return;
+
+            //try stack on same item
+            if (!ItemAsset.Equals(itemAsset))
+                return;
+
+            int slotLeftCapacity = isAdd ? LeftCapacity() : Quantity;
+            if (slotLeftCapacity <= 0)
+                return;
+
+            int addedQuantity = 0;
+            if (!isAdd)
+                addedQuantity = -Mathf.Min(Mathf.Abs(leftQuantity), slotLeftCapacity);
+            else
+                addedQuantity = Mathf.Min(leftQuantity, slotLeftCapacity);
+
+            if (addedQuantity == 0)
+                return;
+
+            leftQuantity -= addedQuantity;
+
+            if (apply)
+            {
+                AddQuantity(addedQuantity, setData);
+            }
+        }
+
+        void CheckSet_Internal(IItemAsset itemAsset, bool apply, ref int leftQuantity, 
+            IManagedGridSlot sourceSlot)
+        {
+            //try add on empty slotq
+            int usedCapacity = itemAsset != null && !itemAsset.IsStackable ? Mathf.Min(leftQuantity, 1) 
+                : Mathf.Min(leftQuantity, Capacity);
+            leftQuantity -= usedCapacity;
+
+            if (apply)
+            {
+                SetItem(itemAsset, usedCapacity, sourceSlot);
+            }
+        }
+
+        object IManagedGridSlot.GetData()
+        {
+            return GetData();
+        }
+        
+        protected virtual object GetData()
+        {
+            return null;
         }
 
         public bool IsStackable(IItemAsset itemAsset, int count)
