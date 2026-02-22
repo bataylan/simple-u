@@ -185,44 +185,46 @@ namespace SimpleU.Inventory
             IManagedGridSlot targetSlot, IItemAsset itemAsset,
             int quantity, bool apply, out int leftQuantity)
         {
-            int addableQuantity = quantity;
-            if (targetSlot != null)
-                targetSlot.CheckAddItem(null, itemAsset, quantity, false, out addableQuantity);
+            int happenedQuantity = quantity;
+            int notHappenedQuantity = 0;
 
-            int removableQuantity = addableQuantity;
+            if (targetSlot != null)
+            {
+                targetSlot.CheckAddQuantity(null, itemAsset, happenedQuantity, out notHappenedQuantity);
+                happenedQuantity -= notHappenedQuantity;
+            }
+
             if (sourceInventory != null)
             {
-                int totalRemovedQuantity = 0;
+                int totalNegativeHappenedQuantity = happenedQuantity;
+
                 for (int i = 0; i < sourceInventory.SlotCount; i++)
                 {
                     var slot = sourceInventory.ManagedGridSlots[i];
-                    slot.CheckRemoveItem(itemAsset, removableQuantity - totalRemovedQuantity, false,
-                        out int removedQuantity);
-                    totalRemovedQuantity += removedQuantity;
+                    slot.CheckAddQuantity(targetSlot, itemAsset, -totalNegativeHappenedQuantity, out notHappenedQuantity);
+                    totalNegativeHappenedQuantity += notHappenedQuantity;
 
-                    if (totalRemovedQuantity >= removableQuantity)
+                    if (totalNegativeHappenedQuantity == 0)
                         break;
                 }
-                removableQuantity = totalRemovedQuantity;
+                happenedQuantity = totalRemovedQuantity;
             }
 
-            int usableQuantity = Mathf.Max(removableQuantity, addableQuantity);
-            if (usableQuantity == 0)
+            if (happenedQuantity == 0)
             {
                 leftQuantity = quantity;
                 return;
             }
 
-
-            leftQuantity = quantity - usableQuantity;
+            leftQuantity = quantity - happenedQuantity;
 
             if (apply)
             {
                 for (int i = 0; i < sourceInventory.SlotCount; i++)
                 {
                     CanAddItemSlotToSlot_Internal(sourceInventory.ManagedGridSlots[i], targetSlot, itemAsset,
-                        usableQuantity, true, out int addedQuantity);
-                    usableQuantity -= addedQuantity;
+                        happenedQuantity, true, out notHappenedQuantity);
+                    happenedQuantity -= addedQuantity;
 
                     if (usableQuantity <= 0)
                         break;
@@ -250,35 +252,38 @@ namespace SimpleU.Inventory
         private static void CanAddItemSlotToSlot_Internal(IManagedGridSlot sourceSlot,
             IManagedGridSlot targetSlot, IItemAsset itemAsset, int quantity, bool apply, out int leftQuantity)
         {
-            int addableQuantity = quantity;
+            int happenedQuantity = quantity;
+            int notHappenedQuantity = 0;
             if (targetSlot != null)
-                targetSlot.CheckAddQuantity(sourceSlot, itemAsset, quantity, false, out addableQuantity);
+            {
+                targetSlot.CheckAddQuantity(sourceSlot, itemAsset, quantity, out notHappenedQuantity);
+                happenedQuantity -= notHappenedQuantity;
+            }
 
-            int removableQuantity = addableQuantity;
             if (sourceSlot != null)
-                sourceSlot.CheckRemoveItem(itemAsset, quantity, false, out removableQuantity);
+            {
+                sourceSlot.CheckAddQuantity(targetSlot, itemAsset, -happenedQuantity, out notHappenedQuantity);
+                happenedQuantity += notHappenedQuantity;
+            }
 
-            int usableQuantity = Mathf.Min(addableQuantity, removableQuantity);
-            if (usableQuantity == 0)
+            if (happenedQuantity == 0)
             {
                 leftQuantity = quantity;
                 return;
             }
 
-            leftQuantity = quantity - usableQuantity;
+            leftQuantity = quantity - happenedQuantity;
 
             if (apply)
             {
                 if (targetSlot != null)
                 {
-                    targetSlot.CheckAddItem(sourceSlot, itemAsset, usableQuantity, true, out int addedQuantity);
-                    Assert.AreEqual(addedQuantity, usableQuantity);
+                    targetSlot.AddQuantity(sourceSlot, itemAsset, happenedQuantity);
                 }
 
                 if (sourceSlot != null)
                 {
-                    sourceSlot.CheckRemoveItem(itemAsset, usableQuantity, true, out int removedQuantity);
-                    Assert.AreEqual(removedQuantity, usableQuantity);
+                    sourceSlot.AddQuantity(targetSlot, itemAsset, -happenedQuantity);
                 }
             }
         }

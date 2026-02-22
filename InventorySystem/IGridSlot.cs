@@ -35,6 +35,7 @@ namespace SimpleU.Inventory
     {
         void SetItem(IItemAsset itemAsset, int quantity, object setData = null);
         
-        void CheckAddQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity, bool apply, out int leftQuantity);
+        void CheckAddQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity, out int leftQuantity);
+        void AddQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity);
     }
 }
