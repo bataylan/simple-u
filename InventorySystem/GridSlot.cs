@@ -7,13 +7,13 @@ namespace SimpleU.Inventory
     public class GridSlot : IManagedGridSlot
     {
         public bool IsEmpty => !HasItem;
-        public bool HasItem => Quantity > 0 && ItemAsset != null;
+        public bool HasItem => Quantity > 0;
         public int Index => _slotIndex;
         public int RowIndex => _rowIndex;
         public int ColumnIndex => _columnIndex;
         public IInventoryManager InventoryManager => _inventoryManager;
         public bool IsFull => Quantity >= Capacity;
-        public int Quantity => _quantityItem != null ? _quantityItem.Quantity : 0;
+        public int Quantity => _quantityItem?.ItemAsset != null ? _quantityItem.Quantity : 0;
         public IItemAsset ItemAsset => _quantityItem != null ? _quantityItem.ItemAsset : default;
         public IQuantityItem QuantityItem => _quantityItem;
         public int Capacity => _capacity;
@@ -36,27 +36,29 @@ namespace SimpleU.Inventory
             _capacity = capacity;
         }
 
-        void IManagedGridSlot.SetItem(IItemAsset itemAsset, int quantity, object setData)
+        protected virtual void AddQuantity(IGridSlot sourceSlot, IQuantityItem item)
         {
-            SetItem(itemAsset, quantity, setData);
-        }
+            int value = Quantity + item.Quantity;
+            int safeQuantity = Math.Max(value, 0);
+            if (safeQuantity == Quantity)
+                return;
 
-        protected virtual void SetItem(IItemAsset itemAsset, int quantity, object setData)
-        {
             bool wasEmpty = IsEmpty;
 
-            if (itemAsset == null)
+            if (safeQuantity <= 0)
             {
                 _quantityItem = default;
             }
             else
             {
-                var quantityItem = new QuantityItem()
+                if (IsEmpty)
                 {
-                    itemAsset = itemAsset,
-                    quantity = quantity
-                };
-                _quantityItem = quantityItem;
+                    _quantityItem = item;
+                }
+                else
+                {
+                    QuantityItem.SetQuantity(safeQuantity);
+                }
             }
 
             if (wasEmpty)
@@ -67,91 +69,85 @@ namespace SimpleU.Inventory
             {
                 OnEmptinessChange?.Invoke(this);
             }
-        }
-
-        protected virtual void AddQuantity(int quantity)
-        {
-            int value = Quantity + quantity;
-            int safeQuantity = Math.Max(value, 0);
-            if (safeQuantity == Quantity)
-                return;
-
-            if (safeQuantity <= 0)
-            {
-                ((IManagedGridSlot)this).SetItem(null, 0);
-            }
-            else
-            {
-                if (QuantityItem == null)
-                    throw new Exception("QuantityItem is null but trying to set quantity!");
-
-                QuantityItem.SetQuantity(safeQuantity);
-            }
             OnQuantityChange?.Invoke(this);
         }
 
-        void IManagedGridSlot.CheckAddQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity, 
-            bool apply, out int leftQuantity)
+        void IManagedGridSlot.AddQuantity(IGridSlot sourceSlot, IQuantityItem item)
         {
-            leftQuantity = quantity;
-            
-            bool isAdd = quantity > 0;
-            if (HasItem)
+            AddQuantity(sourceSlot, item);
+        }
+
+        void IManagedGridSlot.RemoveQuantity(IGridSlot sourceSlot, int quantity,
+            out IQuantityItem removedItem)
+        {
+            GridSlotService.RemoveQuantity(this, sourceSlot, quantity, out removedItem);
+        }
+
+        bool IManagedGridSlot.CanApplyQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity,
+            out int leftQuantity)
+        {
+            return GridSlotService.CanApplyQuantity(this, sourceSlot, itemAsset, quantity, out leftQuantity);
+        }
+    }
+
+    public static class GridSlotService
+    {
+        public static void RemoveQuantity(IManagedGridSlot slot, IGridSlot sourceSlot, int quantity,
+            out IQuantityItem removedItem)
+        {
+            var itemAsset = slot.ItemAsset;
+            var removeItem = new QuantityItem()
             {
-                CheckStack_Internal(itemAsset, isAdd, apply, ref leftQuantity, sourceSlot);
+                itemAsset = slot.ItemAsset,
+                quantity = -quantity
+            };
+            slot.AddQuantity(sourceSlot, removeItem);
+            removedItem = new QuantityItem()
+            {
+                itemAsset = itemAsset,
+                quantity = quantity
+            };
+        }
+        public static bool CanApplyQuantity(IManagedGridSlot slot, IGridSlot sourceSlot, IItemAsset itemAsset, int quantity,
+            out int leftQuantity)
+        {
+            bool isAdd = quantity > 0;
+            leftQuantity = quantity;
+
+            if (slot.HasItem)
+            {
+                if (isAdd && !itemAsset.IsStackable)
+                    return false;
+
+                //try stack on same item
+                if (!slot.ItemAsset.Equals(itemAsset))
+                    return false;
+
+                int slotLeftCapacity = isAdd ? slot.Capacity - slot.Quantity : slot.Quantity;
+                if (slotLeftCapacity <= 0)
+                    return false;
+
+                int addedQuantity = 0;
+                if (!isAdd)
+                    addedQuantity = -Mathf.Min(Mathf.Abs(leftQuantity), slotLeftCapacity);
+                else
+                    addedQuantity = Mathf.Min(leftQuantity, slotLeftCapacity);
+
+                if (addedQuantity == 0)
+                    return false;
+
+                leftQuantity -= addedQuantity;
             }
             else
             {
                 if (!isAdd)
-                    return;
+                    return false;
 
-                CheckSet_Internal(itemAsset, apply, ref leftQuantity, sourceSlot);
+                int usedCapacity = itemAsset != null && !itemAsset.IsStackable ? Mathf.Min(leftQuantity, 1)
+                    : Mathf.Min(leftQuantity, slot.Capacity);
+                leftQuantity -= usedCapacity;
             }
-        }
-        
-        void CheckStack_Internal(IItemAsset itemAsset, bool isAdd, bool apply, ref int leftQuantity, 
-            IGridSlot sourceSlot)
-        {
-            if (isAdd && !itemAsset.IsStackable)
-                return;
-
-            //try stack on same item
-            if (!ItemAsset.Equals(itemAsset))
-                return;
-
-            int slotLeftCapacity = isAdd ? Capacity - Quantity : Quantity;
-            if (slotLeftCapacity <= 0)
-                return;
-
-            int addedQuantity = 0;
-            if (!isAdd)
-                addedQuantity = -Mathf.Min(Mathf.Abs(leftQuantity), slotLeftCapacity);
-            else
-                addedQuantity = Mathf.Min(leftQuantity, slotLeftCapacity);
-
-            if (addedQuantity == 0)
-                return;
-
-            leftQuantity -= addedQuantity;
-
-            if (apply)
-            {
-                AddQuantity(addedQuantity);
-            }
-        }
-
-        void CheckSet_Internal(IItemAsset itemAsset, bool apply, ref int leftQuantity, 
-            IGridSlot sourceSlot)
-        {
-            //try add on empty slotq
-            int usedCapacity = itemAsset != null && !itemAsset.IsStackable ? Mathf.Min(leftQuantity, 1) 
-                : Mathf.Min(leftQuantity, Capacity);
-            leftQuantity -= usedCapacity;
-
-            if (apply)
-            {
-                SetItem(itemAsset, usedCapacity, sourceSlot);
-            }
+            return leftQuantity != quantity;
         }
     }
 }

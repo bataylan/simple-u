@@ -92,8 +92,7 @@ namespace SimpleU.Inventory
 
             if (targetSlot != null)
             {
-                targetSlot.CheckAddQuantity(null, itemAsset, calculated, false,
-                    out notHappenedQuantity);
+                targetSlot.CanApplyQuantity(null, itemAsset, calculated, out notHappenedQuantity);
                 calculated -= notHappenedQuantity;
             }
 
@@ -171,7 +170,7 @@ namespace SimpleU.Inventory
                 if (!targetSlot.ManagedInventoryManager.CanAddItem(sourceSlot, targetSlot, itemAsset, quantity))
                     return;
 
-                targetSlot.CheckAddQuantity(sourceSlot, itemAsset, quantity, false, out notHappenedQuantity);
+                targetSlot.CanApplyQuantity(sourceSlot, itemAsset, quantity, out notHappenedQuantity);
                 happenedQuantity -= notHappenedQuantity;
             }
 
@@ -180,7 +179,7 @@ namespace SimpleU.Inventory
                 if (!sourceSlot.ManagedInventoryManager.CanAddItem(targetSlot, sourceSlot, itemAsset, -happenedQuantity))
                     return;
 
-                sourceSlot.CheckAddQuantity(targetSlot, itemAsset, -happenedQuantity, false, out notHappenedQuantity);
+                sourceSlot.CanApplyQuantity(targetSlot, itemAsset, -happenedQuantity, out notHappenedQuantity);
                 happenedQuantity += notHappenedQuantity;
             }
 
@@ -188,14 +187,26 @@ namespace SimpleU.Inventory
             if (!apply || happenedQuantity == 0)
                 return;
 
-            if (targetSlot != null)
+            if (happenedQuantity > 0)
             {
-                targetSlot.CheckAddQuantity(sourceSlot, itemAsset, happenedQuantity, true, out _);
+                IQuantityItem targetSlotAddition = new QuantityItem()
+                {
+                    itemAsset = itemAsset,
+                    quantity = happenedQuantity
+                };
+                sourceSlot?.RemoveQuantity(targetSlot, happenedQuantity, out targetSlotAddition);
+                targetSlot?.AddQuantity(sourceSlot, targetSlotAddition);
             }
-
-            if (sourceSlot != null)
+            else
             {
-                sourceSlot.CheckAddQuantity(targetSlot, itemAsset, -happenedQuantity, true, out _);
+                IQuantityItem sourceSlotAddition = new QuantityItem()
+                {
+                    itemAsset = itemAsset,
+                    quantity = happenedQuantity
+                };
+
+                targetSlot?.RemoveQuantity(sourceSlot, -happenedQuantity, out sourceSlotAddition);
+                sourceSlot?.AddQuantity(targetSlot, sourceSlotAddition);
             }
         }
 

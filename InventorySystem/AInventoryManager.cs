@@ -48,9 +48,9 @@ namespace SimpleU.Inventory
             }
         }
 
-        protected void SetItem(int index, IItemAsset itemAsset, int quantity)
+        protected void SetItem(int index, IGridSlot source, IQuantityItem item)
         {
-            _slots[index].SetItem(itemAsset, quantity, null);
+            _slots[index].AddQuantity(source, item);
         }
 
         public bool HasEnoughQuantity(IItemAsset itemAsset, int quantity)

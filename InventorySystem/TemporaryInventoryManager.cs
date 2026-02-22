@@ -111,7 +111,6 @@ namespace SimpleU.Inventory
         private int _rowIndex;
         private int _columnIndex;
         private int _capacity;
-        private int _originalSlotIndex;
         private IQuantityItem _quantityItem;
 
         public TemporaryGrid(IInventoryManager inventoryManager, int index, int rowIndex, int columnIndex,
@@ -122,15 +121,14 @@ namespace SimpleU.Inventory
             _rowIndex = rowIndex;
             _columnIndex = columnIndex;
             _capacity = capacity;
-            _originalSlotIndex = 0;
             _quantityItem = null;
         }
 
-        public void SetItem(IItemAsset itemAsset, int quantity, object setData = null)
+        public void SetItem(IItemAsset itemAsset, int quantity)
         {
             if (itemAsset == null)
             {
-                SetQuantityItem(default);
+                _quantityItem = default;
             }
             else
             {
@@ -139,31 +137,30 @@ namespace SimpleU.Inventory
                     itemAsset = itemAsset,
                     quantity = quantity
                 };
-                SetQuantityItem(quantityItem);
+                _quantityItem = quantityItem;
             }
         }
 
-        public void AddQuantity(int quantity, object setData = null)
+        bool IManagedGridSlot.CanApplyQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity, out int leftQuantity)
         {
-            Quantity += quantity;
-        }
-        
-        public object GetData() => null;
-
-        void SetQuantityItem(QuantityItem quantityItem)
-        {
-            _quantityItem = quantityItem;
+            return GridSlotService.CanApplyQuantity(this, sourceSlot, itemAsset, quantity, out leftQuantity);
         }
 
-        public void CheckAddQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity, bool apply,
-            out int leftQuantity)
+        void IManagedGridSlot.RemoveQuantity(IGridSlot sourceSlot, int quantity, out IQuantityItem removedItem)
         {
-            throw new NotImplementedException();
+            GridSlotService.RemoveQuantity(this, sourceSlot, quantity, out removedItem);
         }
 
-        public void AddQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity)
+        void IManagedGridSlot.AddQuantity(IGridSlot sourceSlot, IQuantityItem quantityItem)
         {
-            throw new NotImplementedException();
+            if (_quantityItem == null)
+            {
+                _quantityItem = quantityItem;
+            }
+            else
+            {
+                QuantityItem.SetQuantity(Quantity + quantityItem.Quantity);
+            }
         }
     }
 }

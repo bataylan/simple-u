@@ -47,8 +47,8 @@ namespace SimpleU.Inventory
     public interface IManagedGridSlot : IGridSlot
     {
         IManagedInventoryManager ManagedInventoryManager => InventoryManager as IManagedInventoryManager;
-        void SetItem(IItemAsset itemAsset, int quantity, object setData = null);
-        void CheckAddQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity, bool apply, 
-            out int leftQuantity);
+        bool CanApplyQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity, out int leftQuantity);
+        void RemoveQuantity(IGridSlot sourceSlot, int quantity, out IQuantityItem removedItem);
+        void AddQuantity(IGridSlot sourceSlot, IQuantityItem quantityItem);
     }
 }
