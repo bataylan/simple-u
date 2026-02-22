@@ -51,7 +51,7 @@ namespace SimpleU.Tests.Inventory
         [Test]
         public void TryAdd_SingleItem_Success()
         {
-            bool success = InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+            bool success = InventoryService.CheckAddItem(null, _inventoryManager, 
                 _testItem, 5, true, out int leftOver, false);
 
             Assert.IsTrue(success);
@@ -64,11 +64,11 @@ namespace SimpleU.Tests.Inventory
         public void TryAdd_StackableItem_Merges()
         {
             // Add 5 initially
-            InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+            InventoryService.CheckAddItem(null, _inventoryManager, 
                 _testItem, 5, true, out _, false);
             
             // Add 3 more
-            bool success = InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+            bool success = InventoryService.CheckAddItem(null, _inventoryManager, 
                 _testItem, 3, true, out int leftOver, false);
 
             Assert.IsTrue(success);
@@ -82,7 +82,7 @@ namespace SimpleU.Tests.Inventory
         public void TryAdd_StackableItem_Overflows()
         {
             // Slot capacity is 10. Add 15.
-            bool success = InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+            bool success = InventoryService.CheckAddItem(null, _inventoryManager, 
                 _testItem, 15, true, out int leftOver, false);
 
             Assert.IsTrue(success);
@@ -98,11 +98,11 @@ namespace SimpleU.Tests.Inventory
         public void TryAdd_InventoryFull_ReturnsLeftover()
         {
             // Fill all 4 slots with 10 items each = 40 capacity
-            InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+            InventoryService.CheckAddItem(null, _inventoryManager, 
                 _testItem, 40, true, out _, false);
 
             // Try adding 5 more
-            bool success = InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+            bool success = InventoryService.CheckAddItem(null, _inventoryManager, 
                 _testItem, 5, true, out int leftOver, false);
 
             Assert.IsFalse(success);
@@ -113,7 +113,7 @@ namespace SimpleU.Tests.Inventory
         public void TryAdd_NonStackable_Splits()
         {
             // Add 2 non-stackable items
-            bool success = InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+            bool success = InventoryService.CheckAddItem(null, _inventoryManager, 
                 _testItemNonStackable, 15, true, out int leftOver, false);
 
             Assert.IsTrue(success);
@@ -129,7 +129,7 @@ namespace SimpleU.Tests.Inventory
         public void CanAdd_Success_DoesNotModify()
         {
             // Check if we can add 5 items
-            bool canAdd = InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+            bool canAdd = InventoryService.CheckAddItem(null, _inventoryManager, 
                 _testItem, 15, false, out int leftOver, false);
 
             Assert.IsTrue(canAdd);
@@ -143,7 +143,7 @@ namespace SimpleU.Tests.Inventory
         public void GetQuantity_MultipleSlots()
         {
             // Add 10 to slot 0, 5 to slot 1
-            InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+            InventoryService.CheckAddItem(null, _inventoryManager, 
                 _testItem, 15, true, out int leftOver, false);
 
             int total = _inventoryManager.GetQuantity(_testItem);
@@ -153,7 +153,7 @@ namespace SimpleU.Tests.Inventory
         [Test]
         public void HasEnoughQuantity_Checks()
         {
-            InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+            InventoryService.CheckAddItem(null, _inventoryManager, 
                 _testItem, 10, true, out int leftOver, false);
 
             Assert.IsTrue(_inventoryManager.HasEnoughQuantity(_testItem, 5));

@@ -55,12 +55,12 @@ namespace SimpleU.Inventory
 
         public bool HasEnoughQuantity(IItemAsset itemAsset, int quantity)
         {
-            return InventoryManagerService.HasEnoughQuantity(this, itemAsset, quantity);
+            return InventoryService.HasEnoughQuantity(this, itemAsset, quantity);
         }
 
         public int GetQuantity(IItemAsset itemAsset)
         {
-            return InventoryManagerService.GetQuantity(this, itemAsset);
+            return InventoryService.GetQuantity(this, itemAsset);
         }
 
         bool IManagedInventoryManager.CanAddItem(IGridSlot sourceSlot, IGridSlot targetSlot, IItemAsset itemAsset, int quantity)

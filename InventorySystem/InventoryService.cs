@@ -5,7 +5,7 @@ using UnityEngine.Assertions;
 
 namespace SimpleU.Inventory
 {
-    public static class InventoryManagerService
+    public static class InventoryService
     {
         public static bool CheckAddItem(IInventoryManager sourceInventory,
             IInventoryManager targetInventory, IItemAsset itemAsset, int quantity, bool apply,
