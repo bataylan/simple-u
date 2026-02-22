@@ -20,7 +20,7 @@ namespace SimpleU.Inventory
 
         private IInventoryManager _inventoryManager;
         private int _slotIndex, _rowIndex, _columnIndex;
-        private IQuantityItem _quantityItem;
+        protected IQuantityItem _quantityItem;
         private int _capacity;
 
         public Action<GridSlot> OnEmptinessChange { get; set; }
@@ -47,7 +47,7 @@ namespace SimpleU.Inventory
 
             if (itemAsset == null)
             {
-                SetQuantityItem(default);
+                _quantityItem = default;
             }
             else
             {
@@ -119,7 +119,7 @@ namespace SimpleU.Inventory
             if (!ItemAsset.Equals(itemAsset))
                 return;
 
-            int slotLeftCapacity = isAdd ? LeftCapacity() : Quantity;
+            int slotLeftCapacity = isAdd ? Capacity - Quantity : Quantity;
             if (slotLeftCapacity <= 0)
                 return;
 
@@ -152,33 +152,6 @@ namespace SimpleU.Inventory
             {
                 SetItem(itemAsset, usedCapacity, sourceSlot);
             }
-        }
-
-        public bool IsStackable(IItemAsset itemAsset, int count)
-        {
-            return GridSlotService.IsStackable(this, itemAsset, count);
-        }
-
-        public bool HasCapacity(int count)
-        {
-            return GridSlotService.HasCapacity(this, count);
-        }
-
-        public int LeftCapacity() => GridSlotService.LeftCapacity(this);
-
-        public bool GetIsDroppableToTargetSlot(IGridSlot gridSlot)
-        {
-            return GridSlotService.GetIsDroppableToTargetSlot(this, gridSlot);
-        }
-
-        public bool GetIsStackableToTargetGridSlot(IGridSlot gridSlot)
-        {
-            return GridSlotService.GetIsStackableToTargetGridSlot(this, gridSlot);
-        }
-
-        protected void SetQuantityItem(QuantityItem quantityItem)
-        {
-            _quantityItem = quantityItem;
         }
     }
 }

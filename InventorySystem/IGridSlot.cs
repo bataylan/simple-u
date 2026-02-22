@@ -7,7 +7,7 @@ namespace SimpleU.Inventory
     {
         public bool IsFull => Quantity >= Capacity;
         public bool IsEmpty => !HasItem;
-        public bool HasItem => QuantityItem.IsValid;
+        public bool HasItem => Quantity > 0 && ItemAsset != null;
         int Index { get; }
         int RowIndex { get; }
         int ColumnIndex { get; }
@@ -16,26 +16,39 @@ namespace SimpleU.Inventory
         int Quantity { get; }
         int Capacity { get; }
         IQuantityItem QuantityItem { get; }
-
-        
-        bool IsStackable(IItemAsset itemAsset, int count);
-        int LeftCapacity();
-        bool GetIsDroppableToTargetSlot(IGridSlot gridSlot);
-        bool GetIsStackableToTargetGridSlot(IGridSlot gridSlot);
+        public int LeftCapacity => Capacity - Quantity;
 
         public static int GetIndexByRowColumnIndex(int rowIndex, int columnIndex, int columnCount)
         {
             return (rowIndex * columnCount) + columnIndex;
         }
-
         
+        public bool GetIsDroppableToTargetSlot(IGridSlot targetSlot)
+        {
+            return IsEmpty || targetSlot == this;
+        }
+
+        public bool GetIsStackableToTargetGridSlot(IGridSlot targetSlot)
+        {
+            return !IsEmpty && !targetSlot.IsEmpty && targetSlot.IsStackable(ItemAsset, Quantity);
+        }
+
+        public bool IsStackable(IItemAsset itemAsset, int count)
+        {
+            return HasCapacity(count) && (IsEmpty || ItemAsset.Equals(itemAsset));
+        }
+
+        public bool HasCapacity(int count)
+        {
+            return (Quantity + count) <= Capacity;
+        }
     }
     
     public interface IManagedGridSlot : IGridSlot
     {
         IManagedInventoryManager ManagedInventoryManager => InventoryManager as IManagedInventoryManager;
         void SetItem(IItemAsset itemAsset, int quantity, object setData = null);
-        
-        void CheckAddQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity, bool apply, out int leftQuantity);
+        void CheckAddQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity, bool apply, 
+            out int leftQuantity);
     }
 }

@@ -150,28 +150,6 @@ namespace SimpleU.Inventory
         
         public object GetData() => null;
 
-        public bool IsStackable(IItemAsset itemAsset, int count)
-        {
-            return GridSlotService.IsStackable(this, itemAsset, count);
-        }
-
-        public bool HasCapacity(int count)
-        {
-            return GridSlotService.HasCapacity(this, count);
-        }
-
-        public int LeftCapacity() => GridSlotService.LeftCapacity(this);
-
-        public bool GetIsDroppableToTargetSlot(IGridSlot gridSlot)
-        {
-            return GridSlotService.GetIsDroppableToTargetSlot(this, gridSlot);
-        }
-
-        public bool GetIsStackableToTargetGridSlot(IGridSlot gridSlot)
-        {
-            return GridSlotService.GetIsStackableToTargetGridSlot(this, gridSlot);
-        }
-
         void SetQuantityItem(QuantityItem quantityItem)
         {
             _quantityItem = quantityItem;

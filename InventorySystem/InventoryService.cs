@@ -87,50 +87,50 @@ namespace SimpleU.Inventory
             IManagedGridSlot targetSlot, IItemAsset itemAsset,
             int quantity, bool apply, out int leftQuantity)
         {
-            int happenedQuantity = quantity;
+            int calculated = quantity;
             int notHappenedQuantity = 0;
 
             if (targetSlot != null)
             {
-                targetSlot.CheckAddQuantity(null, itemAsset, happenedQuantity, false, out notHappenedQuantity);
-                happenedQuantity -= notHappenedQuantity;
+                targetSlot.CheckAddQuantity(null, itemAsset, calculated, false, out notHappenedQuantity);
+                calculated -= notHappenedQuantity;
             }
 
             if (sourceInventory != null)
             {
-                int negativeHappened = 0;
+                int sourceCalculated = 0;
                 for (int i = 0; i < sourceInventory.SlotCount; i++)
                 {
-                    int targetQuantity = -happenedQuantity - negativeHappened;
+                    int targetQuantity = calculated - sourceCalculated;
 
                     CheckAddItem_Internal(sourceInventory.ManagedGridSlots[i], targetSlot, itemAsset,
-                        targetQuantity, true, out notHappenedQuantity);
+                        targetQuantity, false, out notHappenedQuantity);
 
-                    negativeHappened += targetQuantity - notHappenedQuantity;
+                    sourceCalculated += targetQuantity - notHappenedQuantity;
 
-                    if (negativeHappened == -happenedQuantity)
+                    if (sourceCalculated == calculated)
                         break;
                 }
-                happenedQuantity = -negativeHappened;
+                calculated = sourceCalculated;
             }
 
-            leftQuantity = quantity - happenedQuantity;
-            if (!apply || happenedQuantity == 0)
+            leftQuantity = quantity - calculated;
+            if (!apply || calculated == 0)
                 return;
 
             int totalHappened = 0;
             for (int i = 0; i < sourceInventory.SlotCount; i++)
             {
-                int target = happenedQuantity - totalHappened;
+                int target = calculated - totalHappened;
                 CheckAddItem_Internal(sourceInventory.ManagedGridSlots[i], targetSlot, itemAsset,
                     target, true, out notHappenedQuantity);
                 totalHappened += target - notHappenedQuantity;
 
-                if (totalHappened == happenedQuantity)
+                if (totalHappened == calculated)
                     break;
             }
 
-            Assert.AreEqual(totalHappened, happenedQuantity);
+            Assert.AreEqual(totalHappened, calculated);
         }
 
         public static bool CheckAddItem(IGridSlot sourceSlot, IGridSlot targetSlot, IItemAsset itemAsset,
@@ -165,7 +165,7 @@ namespace SimpleU.Inventory
                 targetSlot.CheckAddQuantity(sourceSlot, itemAsset, quantity, false, out notHappenedQuantity);
                 happenedQuantity -= notHappenedQuantity;
             }
-
+            
             if (sourceSlot != null)
             {
                 if (!sourceSlot.ManagedInventoryManager.CanAddItem(targetSlot, sourceSlot, itemAsset, -happenedQuantity))
