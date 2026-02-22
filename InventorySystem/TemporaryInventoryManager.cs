@@ -7,6 +7,9 @@ namespace SimpleU.Inventory
     {
         public int SlotCount => _slots != null ? _slots.Length : 0;
         public int ColumnCount { get; private set; }
+
+        private IManagedInventoryManager _copiedInventoryManager;
+
         public int RowCount { get; private set; }
 
         public IGridSlot[] GridSlots => _slots;
@@ -15,6 +18,7 @@ namespace SimpleU.Inventory
 
         public TemporaryInventoryManager(IInventoryManager inventoryManager)
         {
+            _copiedInventoryManager = inventoryManager as IManagedInventoryManager;
             RowCount = inventoryManager.RowCount;
             ColumnCount = inventoryManager.ColumnCount;
 
@@ -41,6 +45,7 @@ namespace SimpleU.Inventory
 
         public TemporaryInventoryManager(int rowCount, int columnCount, int slotCapacity = 0)
         {
+            _copiedInventoryManager = null;
             RowCount = rowCount;
             ColumnCount = columnCount;
 
@@ -60,40 +65,6 @@ namespace SimpleU.Inventory
             }
         }
 
-        public bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity,
-            bool returnCompletedAll)
-        {
-            return InventoryManagerService.CanAddItemQuantity(this, inventoryItem, quantity, out leftQuantity,
-                returnCompletedAll);
-        }
-
-        public bool TryAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity,
-            bool returnCompletedAll = true)
-        {
-            return InventoryManagerService.TryAddItemQuantity(this, inventoryItem, quantity, out leftQuantity,
-                returnCompletedAll);
-        }
-        
-        public bool TryAddItemToSlot(IGridSlot slot, IItemAsset itemAsset, int quantity, 
-            out int leftQuantity, bool returnCompletedAll = true)
-        {
-            return InventoryManagerService.TryAddItemToSlot(slot, itemAsset, quantity,  
-                out leftQuantity, returnCompletedAll);
-        }
-        public bool CanAddItemToSlot(IGridSlot slot, IItemAsset itemAsset, int quantity, 
-            out int leftQuantity, bool returnCompletedAll = true)
-        {
-            return InventoryManagerService.CanAddItemToSlot(slot, itemAsset, quantity,  
-                out leftQuantity, returnCompletedAll);
-        }
-        
-        public bool TryMoveItem(IManagedInventoryManager sourceInventory, IManagedInventoryManager targetInventory, 
-            IItemAsset itemAsset, int quantity, out int leftQuantity, bool returnCompletedAll = true)
-        {
-            return InventoryManagerService.TryMoveItem(sourceInventory, targetInventory, itemAsset, quantity, 
-                out leftQuantity, returnCompletedAll);
-        }
-
         public bool HasEnoughQuantity(IItemAsset itemAsset, int quantity)
         {
             return InventoryManagerService.HasEnoughQuantity(this, itemAsset, quantity);
@@ -102,6 +73,14 @@ namespace SimpleU.Inventory
         public int GetQuantity(IItemAsset itemAsset)
         {
             return InventoryManagerService.GetQuantity(this, itemAsset);
+        }
+
+        bool IManagedInventoryManager.CanAddItem(IGridSlot sourceSlot, IGridSlot targetSlot, IItemAsset itemAsset, int quantity)
+        {
+            if (_copiedInventoryManager != null)
+                return _copiedInventoryManager.CanAddItem(sourceSlot, targetSlot, itemAsset, quantity);
+            else
+                return true;
         }
 
         public void Dispose()
@@ -196,6 +175,17 @@ namespace SimpleU.Inventory
         void SetQuantityItem(QuantityItem quantityItem)
         {
             _quantityItem = quantityItem;
+        }
+
+        public void CheckAddQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity, bool apply,
+            out int leftQuantity)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity)
+        {
+            throw new NotImplementedException();
         }
     }
 }

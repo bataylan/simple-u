@@ -69,12 +69,7 @@ namespace SimpleU.Inventory
             }
         }
 
-        void IManagedGridSlot.AddQuantity(int quantity, object setData)
-        {
-            AddQuantity(quantity, setData);
-        }
-        
-        protected virtual void AddQuantity(int quantity, object setData)
+        protected virtual void AddQuantity(int quantity)
         {
             int value = Quantity + quantity;
             int safeQuantity = Math.Max(value, 0);
@@ -95,8 +90,8 @@ namespace SimpleU.Inventory
             OnQuantityChange?.Invoke(this);
         }
 
-        void IManagedGridSlot.CheckAddItem(IItemAsset itemAsset, int quantity, bool apply, out int leftQuantity,
-            IManagedGridSlot sourceSlot)
+        void IManagedGridSlot.CheckAddQuantity(IGridSlot sourceSlot, IItemAsset itemAsset, int quantity, 
+            bool apply, out int leftQuantity)
         {
             leftQuantity = quantity;
             
@@ -115,7 +110,7 @@ namespace SimpleU.Inventory
         }
         
         void CheckStack_Internal(IItemAsset itemAsset, bool isAdd, bool apply, ref int leftQuantity, 
-            IManagedGridSlot sourceSlot)
+            IGridSlot sourceSlot)
         {
             if (isAdd && !itemAsset.IsStackable)
                 return;
@@ -141,12 +136,12 @@ namespace SimpleU.Inventory
 
             if (apply)
             {
-                AddQuantity(addedQuantity, setData);
+                AddQuantity(addedQuantity);
             }
         }
 
         void CheckSet_Internal(IItemAsset itemAsset, bool apply, ref int leftQuantity, 
-            IManagedGridSlot sourceSlot)
+            IGridSlot sourceSlot)
         {
             //try add on empty slotq
             int usedCapacity = itemAsset != null && !itemAsset.IsStackable ? Mathf.Min(leftQuantity, 1) 
@@ -157,16 +152,6 @@ namespace SimpleU.Inventory
             {
                 SetItem(itemAsset, usedCapacity, sourceSlot);
             }
-        }
-
-        object IManagedGridSlot.GetData()
-        {
-            return GetData();
-        }
-        
-        protected virtual object GetData()
-        {
-            return null;
         }
 
         public bool IsStackable(IItemAsset itemAsset, int count)

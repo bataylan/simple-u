@@ -51,7 +51,8 @@ namespace SimpleU.Tests.Inventory
         [Test]
         public void TryAdd_SingleItem_Success()
         {
-            bool success = _inventoryManager.TryAddItemQuantity(_testItem, 5, out int leftOver, false);
+            bool success = InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+                _testItem, 5, true, out int leftOver, false);
 
             Assert.IsTrue(success);
             Assert.AreEqual(0, leftOver);
@@ -63,10 +64,12 @@ namespace SimpleU.Tests.Inventory
         public void TryAdd_StackableItem_Merges()
         {
             // Add 5 initially
-            _inventoryManager.TryAddItemQuantity(_testItem, 5, out _, false);
+            InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+                _testItem, 5, true, out _, false);
             
             // Add 3 more
-            bool success = _inventoryManager.TryAddItemQuantity(_testItem, 3, out int leftOver, false);
+            bool success = InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+                _testItem, 3, true, out int leftOver, false);
 
             Assert.IsTrue(success);
             Assert.AreEqual(0, leftOver);
@@ -79,7 +82,8 @@ namespace SimpleU.Tests.Inventory
         public void TryAdd_StackableItem_Overflows()
         {
             // Slot capacity is 10. Add 15.
-            bool success = _inventoryManager.TryAddItemQuantity(_testItem, 15, out int leftOver, false);
+            bool success = InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+                _testItem, 15, true, out int leftOver, false);
 
             Assert.IsTrue(success);
             Assert.AreEqual(0, leftOver);
@@ -94,10 +98,12 @@ namespace SimpleU.Tests.Inventory
         public void TryAdd_InventoryFull_ReturnsLeftover()
         {
             // Fill all 4 slots with 10 items each = 40 capacity
-            _inventoryManager.TryAddItemQuantity(_testItem, 40, out _, false);
+            InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+                _testItem, 40, true, out _, false);
 
             // Try adding 5 more
-            bool success = _inventoryManager.TryAddItemQuantity(_testItem, 5, out int leftOver, false);
+            bool success = InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+                _testItem, 5, true, out int leftOver, false);
 
             Assert.IsFalse(success);
             Assert.AreEqual(5, leftOver);
@@ -107,7 +113,8 @@ namespace SimpleU.Tests.Inventory
         public void TryAdd_NonStackable_Splits()
         {
             // Add 2 non-stackable items
-            bool success = _inventoryManager.TryAddItemQuantity(_testItemNonStackable, 2, out int leftOver, false);
+            bool success = InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+                _testItemNonStackable, 15, true, out int leftOver, false);
 
             Assert.IsTrue(success);
             Assert.AreEqual(0, leftOver);
@@ -122,7 +129,8 @@ namespace SimpleU.Tests.Inventory
         public void CanAdd_Success_DoesNotModify()
         {
             // Check if we can add 5 items
-            bool canAdd = _inventoryManager.CanAddItemQuantity(_testItem, 5, out int leftOver, false);
+            bool canAdd = InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+                _testItem, 15, false, out int leftOver, false);
 
             Assert.IsTrue(canAdd);
             Assert.AreEqual(0, leftOver);
@@ -135,7 +143,8 @@ namespace SimpleU.Tests.Inventory
         public void GetQuantity_MultipleSlots()
         {
             // Add 10 to slot 0, 5 to slot 1
-            _inventoryManager.TryAddItemQuantity(_testItem, 15, out _, false);
+            InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+                _testItem, 15, true, out int leftOver, false);
 
             int total = _inventoryManager.GetQuantity(_testItem);
             Assert.AreEqual(15, total);
@@ -144,7 +153,8 @@ namespace SimpleU.Tests.Inventory
         [Test]
         public void HasEnoughQuantity_Checks()
         {
-            _inventoryManager.TryAddItemQuantity(_testItem, 10, out _, false);
+            InventoryManagerService.CheckAddItem(null, _inventoryManager, 
+                _testItem, 10, true, out int leftOver, false);
 
             Assert.IsTrue(_inventoryManager.HasEnoughQuantity(_testItem, 5));
             Assert.IsTrue(_inventoryManager.HasEnoughQuantity(_testItem, 10));

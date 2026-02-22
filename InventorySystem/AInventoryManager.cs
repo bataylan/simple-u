@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using SimpleU.DataContainer;
@@ -31,7 +32,7 @@ namespace SimpleU.Inventory
         {
             return new GridSlot(this, index, rowIndex, columnIndex, capacity);
         }
-        
+
         protected virtual void InitializeGridSlots(int slotCapacity)
         {
             _slots = new GridSlot[SlotCount];
@@ -49,46 +50,7 @@ namespace SimpleU.Inventory
 
         protected void SetItem(int index, IItemAsset itemAsset, int quantity)
         {
-            int leftQuantity = quantity;
-            InventoryManagerService.CheckSet_Internal(_slots[index], itemAsset, true, ref leftQuantity);
-            if (leftQuantity != 0)
-            {
-                Debug.Log("Failed to set item to slot!");
-            }
-        }
-
-        public virtual bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity,
-            bool returnCompletedAll)
-        {
-            return InventoryManagerService.CanAddItemQuantity(this, inventoryItem, quantity,
-                out leftQuantity, returnCompletedAll);
-        }
-
-        public virtual bool TryAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity,
-            bool returnCompletedAll)
-        {
-            return InventoryManagerService.TryAddItemQuantity(this, inventoryItem, quantity,
-                out leftQuantity, returnCompletedAll);
-        }
-        
-        public virtual bool TryAddItemToSlot(IGridSlot slot, IItemAsset itemAsset, int quantity, 
-            out int leftQuantity, bool returnCompletedAll = true)
-        {
-            return InventoryManagerService.TryAddItemToSlot(slot, itemAsset, quantity,  
-                out leftQuantity, returnCompletedAll);
-        }
-        public virtual bool CanAddItemToSlot(IGridSlot slot, IItemAsset itemAsset, int quantity, 
-            out int leftQuantity, bool returnCompletedAll = true)
-        {
-            return InventoryManagerService.CanAddItemToSlot(slot, itemAsset, quantity,  
-                out leftQuantity, returnCompletedAll);
-        }
-
-        public virtual bool TryMoveItem(IInventoryManager targetInventory, 
-            IItemAsset itemAsset, int quantity, out int leftQuantity, bool returnCompletedAll = true)
-        {
-            return InventoryManagerService.TryMoveItem(this, (IManagedInventoryManager)targetInventory, itemAsset, quantity, 
-                out leftQuantity, returnCompletedAll);
+            _slots[index].SetItem(itemAsset, quantity, null);
         }
 
         public bool HasEnoughQuantity(IItemAsset itemAsset, int quantity)
@@ -100,6 +62,16 @@ namespace SimpleU.Inventory
         {
             return InventoryManagerService.GetQuantity(this, itemAsset);
         }
+
+        bool IManagedInventoryManager.CanAddItem(IGridSlot sourceSlot, IGridSlot targetSlot, IItemAsset itemAsset, int quantity)
+        {
+            return CanAddItem_Internal(sourceSlot, targetSlot, itemAsset, quantity);
+        }
+
+        protected virtual bool CanAddItem_Internal(IGridSlot sourceSlot, IGridSlot targetSlot, IItemAsset itemAsset, int quantity)
+        {
+            return true;
+        }
     }
 
     public interface IInventoryManager
@@ -108,14 +80,6 @@ namespace SimpleU.Inventory
         int ColumnCount { get; }
         int RowCount { get; }
         IGridSlot[] GridSlots { get; }
-        bool TryAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity, bool returnCompletedAll = true);
-        bool CanAddItemQuantity(IItemAsset inventoryItem, int quantity, out int leftQuantity, bool returnCompletedAll = true);
-        bool TryAddItemToSlot(IGridSlot slot, IItemAsset itemAsset, int quantity, 
-            out int leftQuantity, bool returnCompletedAll = true);
-        bool CanAddItemToSlot(IGridSlot slot, IItemAsset itemAsset, int quantity, 
-            out int leftQuantity, bool returnCompletedAll = true);
-        bool TryMoveItem(IInventoryManager targetInventory, 
-            IItemAsset itemAsset, int quantity, out int leftQuantity, bool returnCompletedAll = true);
         bool HasEnoughQuantity(IItemAsset itemAsset, int quantity);
         int GetQuantity(IItemAsset itemAsset);
     }
@@ -123,5 +87,6 @@ namespace SimpleU.Inventory
     public interface IManagedInventoryManager : IInventoryManager
     {
         IManagedGridSlot[] ManagedGridSlots { get; }
+        bool CanAddItem(IGridSlot sourceSlot, IGridSlot targetSlot, IItemAsset itemAsset, int quantity);
     }
 }
