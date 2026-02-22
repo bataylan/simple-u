@@ -58,7 +58,7 @@ namespace SimpleU.Inventory
                 var slot = inventory.ManagedGridSlots[i];
                 int targetCount = sign * (happenedQuantity - totalHappened);
                 CheckAddItem_Internal(sourceInventory, slot, itemAsset, targetCount,
-                    false, out notHappenedQuantity);
+                    true, out notHappenedQuantity);
                 totalHappened += targetCount - notHappenedQuantity;
 
                 if (totalHappened == sign * happenedQuantity)
@@ -92,7 +92,8 @@ namespace SimpleU.Inventory
 
             if (targetSlot != null)
             {
-                targetSlot.CheckAddQuantity(null, itemAsset, calculated, false, out notHappenedQuantity);
+                targetSlot.CheckAddQuantity(null, itemAsset, calculated, false,
+                    out notHappenedQuantity);
                 calculated -= notHappenedQuantity;
             }
 
@@ -119,18 +120,26 @@ namespace SimpleU.Inventory
                 return;
 
             int totalHappened = 0;
-            for (int i = 0; i < sourceInventory.SlotCount; i++)
+            if (sourceInventory != null)
             {
-                int target = calculated - totalHappened;
-                CheckAddItem_Internal(sourceInventory.ManagedGridSlots[i], targetSlot, itemAsset,
-                    target, true, out notHappenedQuantity);
-                totalHappened += target - notHappenedQuantity;
+                for (int i = 0; i < sourceInventory.SlotCount; i++)
+                {
+                    int target = calculated - totalHappened;
+                    CheckAddItem_Internal(sourceInventory.ManagedGridSlots[i], targetSlot, itemAsset,
+                        target, true, out notHappenedQuantity);
+                    totalHappened += target - notHappenedQuantity;
 
-                if (totalHappened == calculated)
-                    break;
+                    if (totalHappened == calculated)
+                        break;
+                }
+                Assert.AreEqual(totalHappened, calculated);
             }
-
-            Assert.AreEqual(totalHappened, calculated);
+            else
+            {
+                CheckAddItem_Internal(default(IManagedGridSlot), targetSlot, itemAsset,
+                    calculated, true, out leftQuantity);
+                Assert.AreEqual(leftQuantity, 0);
+            }
         }
 
         public static bool CheckAddItem(IGridSlot sourceSlot, IGridSlot targetSlot, IItemAsset itemAsset,
@@ -165,12 +174,12 @@ namespace SimpleU.Inventory
                 targetSlot.CheckAddQuantity(sourceSlot, itemAsset, quantity, false, out notHappenedQuantity);
                 happenedQuantity -= notHappenedQuantity;
             }
-            
+
             if (sourceSlot != null)
             {
                 if (!sourceSlot.ManagedInventoryManager.CanAddItem(targetSlot, sourceSlot, itemAsset, -happenedQuantity))
                     return;
-                    
+
                 sourceSlot.CheckAddQuantity(targetSlot, itemAsset, -happenedQuantity, false, out notHappenedQuantity);
                 happenedQuantity += notHappenedQuantity;
             }
@@ -189,70 +198,6 @@ namespace SimpleU.Inventory
                 sourceSlot.CheckAddQuantity(targetSlot, itemAsset, -happenedQuantity, true, out _);
             }
         }
-        
-        //moved to slots
-        /*
-        private static void CanAddItemToSlot_Internal(IManagedGridSlot slot, IItemAsset itemAsset,
-            bool isAdd, bool doAdd, ref int leftQuantity, object setData = null)
-        {
-            if (slot.HasItem)
-            {
-                CheckStack_Internal(slot, itemAsset, isAdd, doAdd, ref leftQuantity, setData);
-            }
-            else
-            {
-                if (!isAdd)
-                    return;
-
-                CheckSet_Internal(slot, itemAsset, doAdd, ref leftQuantity, setData);
-            }
-        }
-        
-        
-        private static void CheckStack_Internal(IManagedGridSlot slot, IItemAsset itemAsset, bool isAdd, bool doAdd,
-            ref int leftQuantity, object setData = null)
-        {
-            if (isAdd && !itemAsset.IsStackable)
-                return;
-
-            //try stack on same item
-            if (!slot.ItemAsset.Equals(itemAsset))
-                return;
-
-            int slotLeftCapacity = isAdd ? slot.LeftCapacity() : slot.Quantity;
-            if (slotLeftCapacity <= 0)
-                return;
-
-            int addedQuantity = 0;
-            if (!isAdd)
-                addedQuantity = -Mathf.Min(Mathf.Abs(leftQuantity), slotLeftCapacity);
-            else
-                addedQuantity = Mathf.Min(leftQuantity, slotLeftCapacity);
-
-            if (addedQuantity == 0)
-                return;
-
-            leftQuantity -= addedQuantity;
-
-            if (doAdd)
-            {
-                slot.AddQuantity(addedQuantity, setData);
-            }
-        }
-
-        internal static void CheckSet_Internal(IManagedGridSlot slot, IItemAsset itemAsset, bool doAdd,
-            ref int leftQuantity, object setData = null)
-        {
-            //try add on empty slotq
-            int usedCapacity = itemAsset != null && !itemAsset.IsStackable ? Mathf.Min(leftQuantity, 1) : Mathf.Min(leftQuantity, slot.Capacity);
-            leftQuantity -= usedCapacity;
-
-            if (doAdd)
-            {
-                slot.SetItem(itemAsset, usedCapacity, setData);
-            }
-        }
-        */
 
         public static bool HasEnoughQuantity(IManagedInventoryManager inventory, IItemAsset itemAsset, int quantity)
         {
