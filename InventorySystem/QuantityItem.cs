@@ -11,6 +11,7 @@ namespace SimpleU.Inventory
         bool IsValid { get; }
         IItemAsset ItemAsset { get; }
         int Quantity { get; }
+        object ExtraData { get; set; }
 
         void SetQuantity(int quantity);
     }
@@ -24,6 +25,7 @@ namespace SimpleU.Inventory
         public IItemAsset ItemAsset => itemAsset;
         public int Quantity => quantity;
         public bool IsValid => itemAsset != null && quantity > 0;
+        public object ExtraData { get; set; }
 
         public void SetQuantity(int quantity)
         {

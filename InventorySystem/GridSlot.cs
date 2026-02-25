@@ -77,7 +77,7 @@ namespace SimpleU.Inventory
             AddQuantity(sourceSlot, item);
         }
 
-        void IManagedGridSlot.RemoveQuantity(IGridSlot sourceSlot, int quantity,
+        public virtual void RemoveQuantity(IGridSlot sourceSlot, int quantity,
             out IQuantityItem removedItem)
         {
             GridSlotService.RemoveQuantity(this, sourceSlot, quantity, out removedItem);
