@@ -42,7 +42,12 @@ namespace SimpleU.Inventory
             int safeQuantity = Math.Max(value, 0);
             if (safeQuantity == Quantity)
                 return;
+            bool wasEmpty = ChangeQuantity(item, safeQuantity);
+            InvokeQuantityEvents(wasEmpty);
+        }
 
+        protected bool ChangeQuantity(IQuantityItem item, int safeQuantity)
+        {
             bool wasEmpty = IsEmpty;
 
             if (safeQuantity <= 0)
@@ -61,6 +66,11 @@ namespace SimpleU.Inventory
                 }
             }
 
+            return wasEmpty;
+        }
+        
+        protected void InvokeQuantityEvents(bool wasEmpty)
+        {
             if (wasEmpty)
             {
                 OnEmptinessChange?.Invoke(this);
