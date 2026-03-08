@@ -87,11 +87,15 @@ namespace SimpleU.Inventory
             IManagedGridSlot targetSlot, IItemAsset itemAsset,
             int quantity, bool apply, out int leftQuantity)
         {
+            leftQuantity = quantity;
             int calculated = quantity;
             int notHappenedQuantity = 0;
 
             if (targetSlot != null)
             {
+                if (!targetSlot.ManagedInventoryManager.CanAddItem(null, targetSlot, itemAsset, quantity))
+                    return;
+
                 targetSlot.CanApplyQuantity(null, itemAsset, calculated, out notHappenedQuantity);
                 calculated -= notHappenedQuantity;
             }
