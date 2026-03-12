@@ -15,6 +15,8 @@ namespace SimpleU.SaveSystem
     {
         private const string CFileExtension = ".dat";
 
+        public bool IsValid { get; private set; }
+
         private string _filePath;
         private Dictionary<string, InstanceSave> _instanceSaves;
         private string _folderPath;
@@ -164,6 +166,7 @@ namespace SimpleU.SaveSystem
             if (string.IsNullOrEmpty(fileAsText) || string.IsNullOrWhiteSpace(fileAsText))
                 return;
 
+            IsValid = true;
             var splittedSaveFile = fileAsText.Split(InstanceSave.CEnd);
             for (int i = 0; i < splittedSaveFile.Length; i++)
             {
@@ -171,13 +174,23 @@ namespace SimpleU.SaveSystem
                 if (string.IsNullOrEmpty(rawSavePart))
                     continue;
 
-                if (!InstanceSave.TryParse(rawSavePart, out InstanceSave instanceSave))
+                bool readSuccess = false;
+                try
                 {
-                    Debug.LogError("Save can't be parsed! " + instanceSave.id);
-                    continue;
+                    readSuccess = InstanceSave.TryParse(rawSavePart, out InstanceSave instanceSave);
+                    if (readSuccess) _instanceSaves[instanceSave.id] = instanceSave;
+                }
+                catch (System.Exception e)
+                {
+                    IsValid = false;
+                    Debug.LogError("Instance save corrupted! Raw: " + rawSavePart + "\n" + e);
                 }
 
-                _instanceSaves[instanceSave.id] = instanceSave;
+                if (!readSuccess)
+                {
+                    IsValid = false;
+                    Debug.LogError("Save can't be parsed! Raw: " + rawSavePart);
+                }
             }
         }
 
@@ -254,6 +267,8 @@ namespace SimpleU.SaveSystem
                 int idEndIndex = rawString.IndexOf(CIdSuffix, idStartIndex);
                 string id = rawString.Substring(idStartIndex, idEndIndex - idStartIndex);
                 instanceSave = new InstanceSave(id);
+                
+                bool allReadSuccess = true;
 
                 var splittedComponentsRaw = rawString.Split(ComponentSave.CEnd);
                 for (int i = 0; i < splittedComponentsRaw.Length; i++)
@@ -262,16 +277,21 @@ namespace SimpleU.SaveSystem
                     if (string.IsNullOrEmpty(rawComponentSave) || string.Equals(rawComponentSave, Environment.NewLine))
                         continue;
 
-                    if (!ComponentSave.TryParse(rawComponentSave, out ComponentSave componentSave))
+                    bool readSuccess = false;
+                    try
                     {
-                        Debug.LogError("Component save can't be parsed! " + componentSave.id);
-                        continue;
+                        readSuccess = ComponentSave.TryParse(rawComponentSave, out ComponentSave componentSave);
+                        if (readSuccess) instanceSave.componentSaves.Add(componentSave.id, componentSave);
                     }
-
-                    instanceSave.componentSaves.Add(componentSave.id, componentSave);
+                    catch (System.Exception)
+                    {
+                        Debug.LogError($"Component save can't be parsed! \n{rawComponentSave}");
+                    }
+                    
+                    allReadSuccess &= readSuccess;
                 }
 
-                return true;
+                return allReadSuccess;
             }
 
             public void Dispose()

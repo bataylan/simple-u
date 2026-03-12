@@ -13,6 +13,12 @@ namespace SimpleU.SaveSystem
         private const string CSaveFileNameKey = "save_file_name_k";
 
         public bool SaveInstantiating { get; set; }
+        public bool IsValid
+        {
+            get => _isValid && _saveFileHandler != null && _saveFileHandler.IsValid;
+            private set => _isValid = value;
+        }
+        private bool _isValid;
 
         private Action<SaveManager> _saveTrigger;
         private SaveFileHandler _saveFileHandler;
@@ -89,8 +95,19 @@ namespace SimpleU.SaveSystem
         {
             string folderPath = GetFolderPath();
             string fileName = GetSaveFileName();
-            _saveFileHandler = new SaveFileHandler(folderPath, fileName);
+            try
+            {
+                _saveFileHandler = new SaveFileHandler(folderPath, fileName);
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogError("Save file handler can't be created! Plase send file and this error to developer: " + exception);
+                IsValid = false;
+                return;
+            }
+
             Debug.Log("Save manager set with path: " + folderPath + " and file name: " + fileName);
+            IsValid = true;
         }
         
         public SaveFileInfo GetCurrentSaveFileInfo()
