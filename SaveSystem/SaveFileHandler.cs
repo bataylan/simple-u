@@ -161,12 +161,12 @@ namespace SimpleU.SaveSystem
         private void ReadSaveFile()
         {
             _instanceSaves ??= new Dictionary<string, InstanceSave>();
+            IsValid = true;
 
             var fileAsText = File.ReadAllText(_filePath);
             if (string.IsNullOrEmpty(fileAsText) || string.IsNullOrWhiteSpace(fileAsText))
                 return;
 
-            IsValid = true;
             var splittedSaveFile = fileAsText.Split(InstanceSave.CEnd);
             for (int i = 0; i < splittedSaveFile.Length; i++)
             {
