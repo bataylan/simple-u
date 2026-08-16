@@ -13,7 +13,7 @@ namespace SimpleU.SaveSystem
     /// </summary>
     public class SaveFileHandler : IDisposable
     {
-        private const string CFileExtension = ".dat";
+        internal const string CFileExtension = ".dat";
 
         public bool IsValid { get; private set; }
 

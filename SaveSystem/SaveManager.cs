@@ -11,6 +11,7 @@ namespace SimpleU.SaveSystem
     {
         private const string CKey = nameof(SaveManager);
         private const string CSaveFileNameKey = "save_file_name_k";
+        public const string CDefaultFileName = "progress";
 
         public bool SaveInstantiating { get; set; }
         public bool IsValid
@@ -57,17 +58,34 @@ namespace SimpleU.SaveSystem
 
         private static string GetSaveFileName()
         {
-            return PlayerPrefs.GetString(CSaveFileNameKey, "progress");
+            return PlayerPrefs.GetString(CSaveFileNameKey, CDefaultFileName);
         }
 
         public static string GetSaveFileWithExtension()
         {
-            return SaveFileHandler.EnsureFileExtension(PlayerPrefs.GetString(CSaveFileNameKey, "progress"));
+            return SaveFileHandler.EnsureFileExtension(GetSaveFileName());
         }
 
         private SaveManager()
         {
             SetFileHandler();
+        }
+
+        public static string GetIncrementedSaveFileName()
+        {
+            var folder = GetFolderPath();
+
+            int counter = 0;
+            string fileName = CDefaultFileName;
+            string filePath = Path.Combine(folder, fileName + SaveFileHandler.CFileExtension);
+            while (File.Exists(filePath))
+            {
+                counter++;
+                fileName = $"{CDefaultFileName} ({counter})";
+                filePath = Path.Combine(folder, fileName + SaveFileHandler.CFileExtension);
+            }
+            
+            return fileName;
         }
 
         public void Subscribe(Action<SaveManager> onSave) { _saveTrigger += onSave; }
