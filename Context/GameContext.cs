@@ -118,6 +118,7 @@ namespace SimpleU.Context
 
         protected virtual void OnSceneUnloaded(Scene scene)
         {
+            _levelContext.Dispose();
             _levelContext = null;
         }
     }
