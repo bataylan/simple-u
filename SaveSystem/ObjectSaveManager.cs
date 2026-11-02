@@ -32,19 +32,8 @@ namespace SimpleU.SaveSystem
         public string Id => id;
         private bool _idValid = false;
 
-        /// <summary>
-        /// True only for instances whose id was baked in (serialized) before Awake() ran this
-        /// session - i.e. scene-placed instances. Runtime-spawned instances always have
-        /// SetRuntimeId(...) called explicitly before their GameObject is (re)activated
-        /// (see SpawnManager.Spawn / SpawnAndSavePermanentWorld), so Awake() never observes
-        /// a pre-populated id for them and this stays false. Never persisted - re-derived each session.
-        /// </summary>
         public bool IsScenePlaced { get; private set; }
 
-        /// <summary>
-        /// Reserved save bucket recording destroyed scene-placed instance ids, structurally
-        /// identical to the existing "world-instances" bucket (one componentSave row per id).
-        /// </summary>
         public const string CDestroyedInstancesKey = "destroyed-instances";
 
         void Awake()
@@ -76,46 +65,6 @@ namespace SimpleU.SaveSystem
             LoadProgress(_saveManager);
         }
 
-        /// <summary>
-        /// Unified destroy-time cleanup: purges this object's entire save bucket (FR-5/FR-7),
-        /// and - only if the instance is scene-placed - records it in the destroyed-marker
-        /// bucket so it doesn't reappear on next load (FR-1). Safe to call multiple times
-        /// on the same id (EC-4); safe to call with a missing/invalid ObjectSaveManager or
-        /// empty id (EC-1 - logs and no-ops).
-        /// </summary>
-        public static void PurgeSaveData(GameObject gameObject)
-        {
-            if (gameObject == null || !gameObject.TryGetComponent<ObjectSaveManager>(out var identifier))
-            {
-                Debug.LogError("PurgeSaveData: GameObject has no valid ObjectSaveManager, save data not purged!");
-                return;
-            }
-
-            PurgeSaveData(identifier);
-        }
-
-        public static void PurgeSaveData(ObjectSaveManager identifier)
-        {
-            if (identifier == null || string.IsNullOrEmpty(identifier.Id))
-            {
-                Debug.LogError("PurgeSaveData: ObjectSaveManager or Id missing/invalid, save data not purged!");
-                return;
-            }
-
-            var saveManager = SaveManager.Get();
-            saveManager.DeleteData(identifier.Id);
-
-            if (identifier.IsScenePlaced)
-            {
-                saveManager.SaveData(CDestroyedInstancesKey, identifier.Id, true);
-            }
-        }
-
-        /// <summary>
-        /// FR-2 lookup: true if this id has previously been recorded as destroyed.
-        /// False (not an error) for any id never marked - including ids from save files
-        /// written before this feature existed (FR-10).
-        /// </summary>
         public static bool IsMarkedDestroyed(string id)
         {
             if (string.IsNullOrEmpty(id))
