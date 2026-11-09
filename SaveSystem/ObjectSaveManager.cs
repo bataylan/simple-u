@@ -27,6 +27,9 @@ namespace SimpleU.SaveSystem
         /// </summary>
         [SerializeField] private Component[] saveComponents;
 
+        // Network players cannot resolve their persistent identity until after spawning.
+        [SerializeField] private bool deferInitialization;
+
         private SaveManager _saveManager;
 
         public string Id => id;
@@ -39,6 +42,8 @@ namespace SimpleU.SaveSystem
         void Awake()
         {
             _saveManager = SaveManager.Get();
+            if (deferInitialization)
+                return;
 
             //scene placed objects
             if (!_idValid && !string.IsNullOrEmpty(id))
@@ -82,7 +87,10 @@ namespace SimpleU.SaveSystem
                 dict = new Dictionary<string, ObjectSaveManager>();
                 levelContext.ExtraData.SetExtra(CObject_Save_Dictionary, dict);
             }
-            dict.Add(id, this);
+            if (deferInitialization)
+                dict[id] = this; // A reconnect replaces the old, inactive player instance.
+            else
+                dict.Add(id, this);
         }
 
         public static bool GetById(string id, out ObjectSaveManager objectSaveManager)
@@ -131,7 +139,7 @@ namespace SimpleU.SaveSystem
 
         public void SaveProgress(SaveManager manager)
         {
-            if (saveComponents == null)
+            if ((deferInitialization && !_idValid) || saveComponents == null)
                 return;
 
             for (int i = 0; i < saveComponents.Length; i++)
@@ -142,7 +150,7 @@ namespace SimpleU.SaveSystem
 
         public void LoadProgress(SaveManager manager)
         {
-            if (saveComponents == null)
+            if ((deferInitialization && !_idValid) || saveComponents == null)
                 return;
 
             for (int i = 0; i < saveComponents.Length; i++)
@@ -155,6 +163,24 @@ namespace SimpleU.SaveSystem
         {
             this.id = id;
             _idValid = true;
+        }
+
+        /// <summary>Initializes a deferred object once its authoritative identity is known.</summary>
+        public bool InitializeRuntimeId(string runtimeId)
+        {
+            if (!deferInitialization || string.IsNullOrEmpty(runtimeId))
+                return false;
+
+            if (GetById(runtimeId, out var existing) && existing != this && existing.isActiveAndEnabled)
+            {
+                Debug.LogError($"Save identity is already in use: {runtimeId}", this);
+                return false;
+            }
+
+            SetRuntimeId(runtimeId);
+            EnsureRegisterToDictionary();
+            LoadProgress(_saveManager);
+            return true;
         }
 
         void OnValidate()
