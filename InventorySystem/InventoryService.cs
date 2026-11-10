@@ -140,8 +140,8 @@ namespace SimpleU.Inventory
             else
             {
                 CheckAddItem_Internal(default(IManagedGridSlot), targetSlot, itemAsset,
-                    calculated, true, out leftQuantity);
-                Assert.AreEqual(leftQuantity, 0);
+                    calculated, true, out notHappenedQuantity);
+                Assert.AreEqual(notHappenedQuantity, 0);
             }
         }
 
