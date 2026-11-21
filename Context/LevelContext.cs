@@ -18,14 +18,16 @@ namespace SimpleU.Context
             }
             protected set
             {
-                if (value == _status)
+                if (value <= _status)
                     return;
 
+                var previousStatus = _status;
                 _status = value;
-                for (int i = 0; i <= (int)_status; i++)
+                for (int i = (int)previousStatus + 1; i <= (int)value && onStatusChangeCallbacks != null; i++)
                 {
-                    onStatusChangeCallbacks[i]?.Invoke();
+                    var callbacks = onStatusChangeCallbacks[i];
                     onStatusChangeCallbacks[i] = null;
+                    callbacks?.Invoke();
                 }
             }
         }
@@ -68,6 +70,12 @@ namespace SimpleU.Context
             }
         }
 
+        public void CancelNotifyOnState(LevelStatus status, Action statusChangeCallback)
+        {
+            if (onStatusChangeCallbacks != null)
+                onStatusChangeCallbacks[(int)status] -= statusChangeCallback;
+        }
+
         protected virtual void FinishLevel(bool success)
         {
             Status = LevelStatus.Finish;
@@ -78,8 +86,14 @@ namespace SimpleU.Context
 
         public void Dispose()
         {
-            Status = LevelStatus.Unload;
+            if (_status == LevelStatus.Unload)
+                return;
+
+            // Pending startup callbacks belong to the scene being unloaded.
+            _status = LevelStatus.Unload;
+            var unloadCallbacks = onStatusChangeCallbacks[(int)LevelStatus.Unload];
             onStatusChangeCallbacks = null;
+            unloadCallbacks?.Invoke();
         }
 
         public void SetStateSpawn()
