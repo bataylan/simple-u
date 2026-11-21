@@ -7,8 +7,8 @@ namespace SimpleU.Utility
     [Serializable]
     public class IdentifiedSet<T>
     {
-        [SerializeField, HideInInspector] private List<int> _ids;
-        [SerializeField, HideInInspector] private List<T> _items;
+        [SerializeField, HideInInspector] private List<int> _ids = new();
+        [SerializeField, HideInInspector] private List<T> _items = new();
 
         public int Count => _items.Count;
 
@@ -17,8 +17,21 @@ namespace SimpleU.Utility
             if (_items.Contains(item))
                 return;
 
-            int index = GetLastIndex() + 1;
-            _ids.Add(index);
+            AddEntry(checked(GetHighestId() + 1), item);
+        }
+
+        public bool TryAdd(int id, T item)
+        {
+            if (id < 0 || _ids.Contains(id) || _items.Contains(item))
+                return false;
+
+            AddEntry(id, item);
+            return true;
+        }
+
+        private void AddEntry(int id, T item)
+        {
+            _ids.Add(id);
             _items.Add(item);
         }
 
@@ -77,7 +90,7 @@ namespace SimpleU.Utility
         {
             pair = default;
 
-            if (_ids.Count <= index)
+            if (index < 0 || index >= _ids.Count)
                 return false;
 
             int id = _ids[index];
@@ -102,12 +115,12 @@ namespace SimpleU.Utility
             }
         }
 
-        private int GetLastIndex()
+        private int GetHighestId()
         {
-            if (_ids == null || _ids.Count == 0)
-                return -1;
-
-            return _ids[^1];
+            int highestId = -1;
+            foreach (int id in _ids)
+                highestId = Math.Max(highestId, id);
+            return highestId;
         }
 
         private int GetIndex(T item)
