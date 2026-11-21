@@ -18,7 +18,6 @@ namespace SimpleU.Editors.DataContainer
         private Regex _regexItem;
         private SerializedObject _serializedObject;
         private SerializedProperty _arrayProperty;
-        private int _selectedIndexForRename;
 
         public EAssetContainerDrawer(SerializedObject source, SerializedProperty arrayProperty,
             string prefix = null)
@@ -32,7 +31,7 @@ namespace SimpleU.Editors.DataContainer
             _serializedObject = source;
             _arrayProperty = arrayProperty;
 
-            EnsurePrefix(prefix);
+            _prefix = GetNamePrefix(source.targetObject.name, prefix);
 
             ValidateItemListMatchWithAssets();
             CacheAddDropdownOptionTypes();
@@ -47,27 +46,19 @@ namespace SimpleU.Editors.DataContainer
             _reorderableList.onReorderCallback += OnReorder;
         }
 
-        private void EnsurePrefix(string prefix)
+        private static string GetNamePrefix(string containerName, string prefix = null)
         {
-            string name = _serializedObject.targetObject.name;
-            if (string.IsNullOrEmpty(name))
-            {
-                name = typeof(T).Name;
-            }
+            if (string.IsNullOrEmpty(containerName))
+                containerName = typeof(T).Name;
 
-            _prefix = prefix;
             if (string.IsNullOrEmpty(prefix))
             {
-                _prefix = new string(name.Where(x => char.IsUpper(x)).ToArray());
-
-                if (string.IsNullOrEmpty(_prefix))
-                {
-                    _prefix = name.ToString();
-                }
+                prefix = new string(containerName.Where(char.IsUpper).ToArray());
+                if (string.IsNullOrEmpty(prefix))
+                    prefix = containerName;
             }
 
-            if (!string.IsNullOrEmpty(_prefix))
-                _prefix += "-";
+            return prefix + "-";
         }
 
         private void CacheAddDropdownOptionTypes()
@@ -80,6 +71,10 @@ namespace SimpleU.Editors.DataContainer
 
         public void ValidateItemListMatchWithAssets()
         {
+            // Item containers can hold references to subassets owned by other files.
+            if (_serializedObject.targetObject is ItemAssetContainer)
+                return;
+
             var assetPath = AssetDatabase.GetAssetPath(_serializedObject.targetObject);
             var allItemAssets = AssetDatabase.LoadAllAssetRepresentationsAtPath(assetPath);
 
@@ -113,7 +108,7 @@ namespace SimpleU.Editors.DataContainer
             }
         }
 
-        public void DrawInspectorGUI()
+        public virtual void DrawInspectorGUI()
         {
             EditorGUI.BeginChangeCheck();
 
@@ -128,28 +123,6 @@ namespace SimpleU.Editors.DataContainer
                 _itemAssetToAdd = null;
             }
 
-            if (_reorderableList.selectedIndices != null
-                && _reorderableList.selectedIndices.Count == 1
-                && GUILayout.Button("Rename selected"))
-            {
-                _selectedIndexForRename = _reorderableList.selectedIndices[0];
-                var element = _arrayProperty.GetArrayElementAtIndex(_selectedIndexForRename);
-                if (element != null)
-                {
-                    string customItemName = GetCustomItemName(element, _selectedIndexForRename);
-                    UpdateStringWindow.GetWindowForName(customItemName, ReceiveItemName);
-                }
-            }
-
-            if (_reorderableList.selectedIndices != null && _reorderableList.selectedIndices.Count > 0
-                && GUILayout.Button("Reformat selected asset names"))
-            {
-                for (int i = 0; i < _reorderableList.selectedIndices.Count; i++)
-                {
-                    ReformatSelectedName(i);
-                }
-            }
-
             if (EditorGUI.EndChangeCheck())
             {
                 _serializedObject.ApplyModifiedProperties();
@@ -158,59 +131,86 @@ namespace SimpleU.Editors.DataContainer
             }
         }
 
-        private bool ReformatSelectedName(int index)
+        protected void ShowSetNameEditor(T item)
         {
-            _selectedIndexForRename = _reorderableList.selectedIndices[index];
-            var element = _arrayProperty.GetArrayElementAtIndex(_selectedIndexForRename);
-            if (element == null)
-                return false;
+            var container = _serializedObject.targetObject;
+            var itemsPath = _arrayProperty.propertyPath;
+            UpdateStringWindow.GetWindowForName(GetItemNameFromFormattedName(item.name), customName =>
+            {
+                if (!container || !item)
+                    return;
 
-            string customItemName = GetCustomItemName(element, _selectedIndexForRename);
-            ReceiveItemName(customItemName);
-            return true;
+                using var containerProperties = new SerializedObject(container);
+                var items = containerProperties.FindProperty(itemsPath);
+                for (int index = 0; index < items.arraySize; index++)
+                {
+                    if (GetItemAtIndex(items, index) != item)
+                        continue;
+
+                    SetItemName(item, index, customName);
+                    break;
+                }
+            });
         }
 
-        private void ReceiveItemName(string customItemName)
+        protected virtual void SetItemName(T item, int index, string customItemName)
         {
-            var element = _arrayProperty.GetArrayElementAtIndex(_selectedIndexForRename);
-            element.objectReferenceValue.name = GetFormattedItemName(_selectedIndexForRename, customItemName);
-            EditorUtility.SetDirty(_serializedObject.targetObject);
-            AssetDatabase.SaveAssetIfDirty(_serializedObject.targetObject);
+            RenameAsset(item, GetFormattedItemName(index, customItemName, _prefix));
+        }
+
+        private static void RenameAsset(ScriptableObject item, string formattedName)
+        {
+            if (item.name == formattedName)
+                return;
+
+            Undo.RecordObject(item, "Rename item");
+            item.name = formattedName;
+            EditorUtility.SetDirty(item);
+            AssetDatabase.SaveAssetIfDirty(item);
         }
 
         private void OnDrawElement(Rect rect, int index, bool isActive, bool isFocused)
         {
-            var element = _arrayProperty.GetArrayElementAtIndex(index);
-
-            var itemAsset = element.objectReferenceValue as ScriptableObject;
-            if (!itemAsset)
+            var item = GetItemAtIndex(_arrayProperty, index);
+            if (!item && _serializedObject.targetObject is not ItemAssetContainer)
             {
                 Debug.LogError($"ItemAsset reference not found and deleted at index: {index}");
                 RemoveFromMainAsset(_arrayProperty, index, true);
                 return;
             }
 
-            string customItemName = GetCustomItemName(element, index);
-            EditorGUI.LabelField(rect, customItemName);
+            DrawItemRow(rect, item, index, isActive, isFocused);
         }
 
-        private string GetCustomItemName(SerializedProperty element, int index)
+        protected virtual void DrawItemRow(Rect rect, T item, int index, bool isActive, bool isFocused)
         {
-            string itemAssetName = element.objectReferenceValue.name;
-            string customItemName = "";
-            try
-            {
-                customItemName = GetItemNameFromFormattedName(itemAssetName);
-            }
-            catch (Exception)
-            {
-                string formattedDefaultName = GetFormattedItemName(index, null);
-                element.objectReferenceValue.name = GetFormattedItemName(index, null);
-                customItemName = DefaultItemName;
-                Debug.LogError($"Not valid item name! Reformatted from {itemAssetName} to {formattedDefaultName}");
-            }
+            const float buttonWidth = 68f;
+            const float spacing = 4f;
+            float lineHeight = EditorGUIUtility.singleLineHeight;
+            rect.y += (rect.height - lineHeight) / 2f;
+            rect.height = lineHeight;
 
-            return customItemName;
+            float nameWidth = Mathf.Min(buttonWidth, rect.width);
+            var buttonRect = new Rect(rect.xMax - nameWidth, rect.y, nameWidth, lineHeight);
+            rect.width = Mathf.Max(0f, rect.width - nameWidth - spacing);
+
+            DrawItemObjectField(rect, item);
+            DrawSetNameButton(buttonRect, item);
+        }
+
+        protected virtual void DrawItemObjectField(Rect rect, T item)
+        {
+            using (new EditorGUI.DisabledScope(true))
+                EditorGUI.ObjectField(rect, item, typeof(T), false);
+        }
+
+        protected virtual void DrawSetNameButton(Rect rect, T item)
+        {
+            using (new EditorGUI.DisabledScope(!item))
+            {
+                if (GUI.Button(rect, "Set Name", EditorStyles.miniButton))
+                    ShowSetNameEditor(item);
+            }
         }
 
         private void OnAddDropdown(Rect buttonRect, ReorderableList list)
@@ -239,16 +239,16 @@ namespace SimpleU.Editors.DataContainer
             {
                 if (list.selectedIndices != null && list.selectedIndices.Count > 0)
                 {
-                    for (int i = list.selectedIndices.Count - 1; i >= 0; i--)
-                    {
-                        RemoveFromMainAsset(_arrayProperty, list.selectedIndices[i], true);
-                    }
+                    foreach (var index in list.selectedIndices.OrderByDescending(index => index).ToArray())
+                        RemoveFromMainAsset(_arrayProperty, index, true);
                 }
                 else
                 {
                     int lastElementIndex = list.count - 1;
                     RemoveFromMainAsset(_arrayProperty, lastElementIndex, true);
                 }
+
+                ReformatItemNames();
             }
             catch (System.Exception e)
             {
@@ -259,32 +259,33 @@ namespace SimpleU.Editors.DataContainer
 
         private void OnReorder(ReorderableList list)
         {
-            Undo.RecordObjects(_serializedObject.targetObjects, "reorder item asset container");
-            try
-            {
-                for (int i = 0; i < _arrayProperty.arraySize; i++)
-                {
-                    var element = _arrayProperty.GetArrayElementAtIndex(i);
-                    var assetName = element.objectReferenceValue.name;
-                    string itemName = GetItemNameFromFormattedName(assetName);
-                    string correctAssetName = GetFormattedItemName(i, itemName);
+            _serializedObject.ApplyModifiedProperties();
+            ReformatItemNames();
+            AssetDatabase.SaveAssetIfDirty(_serializedObject.targetObject);
+        }
 
-                    if (!string.Equals(assetName, correctAssetName))
-                    {
-                        element.objectReferenceValue.name = correctAssetName;
-                        EditorUtility.SetDirty(element.objectReferenceValue);
-                    }
-                }
-            }
-            catch (System.Exception e)
+        private void ReformatItemNames()
+        {
+            for (int index = 0; index < _arrayProperty.arraySize; index++)
             {
-                Undo.PerformRedo();
-                throw new Exception(e.Message);
+                var item = GetItemAtIndex(_arrayProperty, index);
+                if (item)
+                    SetItemName(item, index, GetItemNameFromFormattedName(item.name));
             }
         }
 
         private void AddItemAsset(T itemAsset, bool checkParent = true)
         {
+            if (!itemAsset)
+                return;
+
+            if (checkParent && itemAsset is ItemAsset item && _serializedObject.targetObject is ItemAssetContainer destination)
+            {
+                _serializedObject.ApplyModifiedProperties();
+                InsertItemReference(item, destination);
+                return;
+            }
+
             Undo.RecordObjects(_serializedObject.targetObjects, "add item asset element");
 
             try
@@ -295,24 +296,13 @@ namespace SimpleU.Editors.DataContainer
                 }
 
                 int index = _arrayProperty.arraySize;
-                if (string.IsNullOrEmpty(itemAsset.name))
-                {
-                    itemAsset.name = GetFormattedItemName(index, itemAsset.name);
-                }
-                else
-                {
-                    string itemName = GetItemNameFromFormattedName(itemAsset.name);
-                    string correctAssetName = GetFormattedItemName(index, itemName);
-                    itemAsset.name = correctAssetName;
-                }
-
-                var path = AssetDatabase.GetAssetPath(_serializedObject.targetObject);
                 AssetDatabase.AddObjectToAsset(itemAsset, _serializedObject.targetObject);
                 _arrayProperty.InsertArrayElementAtIndex(index);
                 var element = _arrayProperty.GetArrayElementAtIndex(index);
                 element.objectReferenceValue = itemAsset;
                 _serializedObject.ApplyModifiedProperties();
                 EditorUtility.SetDirty(_serializedObject.targetObject);
+                SetItemName(itemAsset, index, GetItemNameFromFormattedName(itemAsset.name));
                 AssetDatabase.SaveAssets();
             }
             catch (Exception e)
@@ -320,6 +310,69 @@ namespace SimpleU.Editors.DataContainer
                 Undo.PerformUndo();
                 throw new Exception(e.Message);
             }
+        }
+
+        private void InsertItemReference(ItemAsset item, ItemAssetContainer destination)
+        {
+            if (destination.Items.Contains(item))
+                return;
+
+            var sources = AssetDatabase.FindAssets($"t:{nameof(ItemAssetContainer)}")
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Select(AssetDatabase.LoadAssetAtPath<ItemAssetContainer>)
+                .Where(source => source && source != destination && source.Items.Contains(item))
+                .ToArray();
+
+            if (sources.Length <= 1)
+            {
+                MoveItemReference(item, destination, sources.FirstOrDefault());
+                return;
+            }
+
+            var menu = new GenericMenu();
+            foreach (var source in sources)
+                menu.AddItem(new GUIContent($"Move from {source.name}"), false, () => MoveItemReference(item, destination, source));
+            menu.ShowAsContext();
+        }
+
+        private void MoveItemReference(ItemAsset item, ItemAssetContainer destination, ItemAssetContainer source)
+        {
+            if (!item || !destination || destination.Items.Contains(item))
+                return;
+
+            // Keep the original asset file and local ID so serialized references keep resolving.
+            Undo.RecordObject(destination, "Move item between containers");
+            int destinationIndex = destination.Items.Count;
+            destination.Items.Add(item);
+            EditorUtility.SetDirty(destination);
+            AssetDatabase.SaveAssetIfDirty(destination);
+
+            int sourceIndex = source ? source.Items.IndexOf(item) : -1;
+            if (sourceIndex >= 0)
+            {
+                Undo.RecordObject(source, "Move item between containers");
+                source.Items.RemoveAt(sourceIndex);
+                EditorUtility.SetDirty(source);
+                AssetDatabase.SaveAssetIfDirty(source);
+
+                var sourcePrefix = GetNamePrefix(source.name);
+                for (int index = sourceIndex; index < source.Items.Count; index++)
+                {
+                    var remainingItem = source.Items[index];
+                    if (!remainingItem)
+                        continue;
+
+                    string name = remainingItem.name;
+                    int separator = name.IndexOf('-');
+                    string updatedName = separator > 0 && int.TryParse(name[..separator], out _)
+                        ? $"{index}{name[separator..]}"
+                        : GetFormattedItemName(index, name, sourcePrefix);
+                    RenameAsset(remainingItem, updatedName);
+                }
+            }
+
+            SetItemName(item as T, destinationIndex, GetItemNameFromFormattedName(item.name));
+            _serializedObject.Update();
         }
 
         private static void CheckRemoveFromParent(T toRemoveItem)
@@ -349,6 +402,15 @@ namespace SimpleU.Editors.DataContainer
 
         private static void RemoveFromMainAsset(SerializedProperty itemsProperty, int index, bool delete = false)
         {
+            if (itemsProperty.serializedObject.targetObject is ItemAssetContainer container)
+            {
+                itemsProperty.GetArrayElementAtIndex(index).objectReferenceValue = null;
+                itemsProperty.DeleteArrayElementAtIndex(index);
+                itemsProperty.serializedObject.ApplyModifiedProperties();
+                AssetDatabase.SaveAssetIfDirty(container);
+                return;
+            }
+
             T itemAsset = null;
 
             try
@@ -385,19 +447,19 @@ namespace SimpleU.Editors.DataContainer
             return itemAsset;
         }
 
-        private string GetFormattedItemName(int index, string name)
+        private static string GetFormattedItemName(int index, string name, string prefix)
         {
             if (string.IsNullOrEmpty(name) || string.IsNullOrWhiteSpace(name))
             {
                 name = DefaultItemName;
             }
 
-            return $"{index}-{_prefix}{name}";
+            return $"{index}-{prefix}{name}";
         }
 
-        private string DefaultItemName => typeof(T).Name;
+        private static string DefaultItemName => typeof(T).Name;
 
-        private string GetItemNameFromFormattedName(string itemName)
+        private static string GetItemNameFromFormattedName(string itemName)
         {
             return itemName.Split("-")[^1];
         }

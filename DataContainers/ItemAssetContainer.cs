@@ -7,7 +7,7 @@ namespace SimpleU.DataContainer
     [CreateAssetMenu(fileName = nameof(ItemAssetContainer), menuName = "SimpleU/DataContainer/" + nameof(ItemAssetContainer))]
     public class ItemAssetContainer : AssetContainer
     {
-        [SerializeField, HideInInspector] protected List<ItemAsset> items;
+        [SerializeField, HideInInspector] protected List<ItemAsset> items = new();
 
         public List<ItemAsset> Items => items;
         public virtual string Prefix => "IA{0}";

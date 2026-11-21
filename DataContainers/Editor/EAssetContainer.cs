@@ -10,9 +10,14 @@ namespace SimpleU.Editors.DataContainer
 
         private EAssetContainerDrawer<T> _drawer;
 
+        protected virtual EAssetContainerDrawer<T> CreateDrawer()
+        {
+            return new EAssetContainerDrawer<T>(serializedObject, GetItemsProperty());
+        }
+
         protected virtual void OnEnable()
         {
-            _drawer ??= new EAssetContainerDrawer<T>(serializedObject, GetItemsProperty());
+            _drawer ??= CreateDrawer();
         }
 
         public override void OnInspectorGUI()
