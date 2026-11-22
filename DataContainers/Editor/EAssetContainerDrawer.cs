@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using SimpleU.DataContainer;
@@ -71,9 +72,11 @@ namespace SimpleU.Editors.DataContainer
 
         public void ValidateItemListMatchWithAssets()
         {
-            // Item containers can hold references to subassets owned by other files.
-            if (_serializedObject.targetObject is ItemAssetContainer)
+            if (_serializedObject.targetObject is ItemAssetContainer container)
+            {
+                RestoreUnlistedSubAssets(container);
                 return;
+            }
 
             var assetPath = AssetDatabase.GetAssetPath(_serializedObject.targetObject);
             var allItemAssets = AssetDatabase.LoadAllAssetRepresentationsAtPath(assetPath);
@@ -106,6 +109,40 @@ namespace SimpleU.Editors.DataContainer
 
                 Debug.Log("ItemContainer mismatch found: " + itemAsset.name + " and updated!");
             }
+        }
+
+        private void RestoreUnlistedSubAssets(ItemAssetContainer container)
+        {
+            var path = AssetDatabase.GetAssetPath(container);
+            if (string.IsNullOrEmpty(path))
+                return;
+
+            var listed = new HashSet<T>();
+            for (int i = 0; i < _arrayProperty.arraySize;)
+            {
+                var item = GetItemAtIndex(_arrayProperty, i);
+                if (item && listed.Add(item))
+                {
+                    i++;
+                    continue;
+                }
+
+                _arrayProperty.GetArrayElementAtIndex(i).objectReferenceValue = null;
+                _arrayProperty.DeleteArrayElementAtIndex(i);
+            }
+
+            foreach (var item in AssetDatabase.LoadAllAssetsAtPath(path).OfType<T>())
+            {
+                if (!AssetDatabase.IsSubAsset(item) || !listed.Add(item))
+                    continue;
+
+                int index = _arrayProperty.arraySize;
+                _arrayProperty.InsertArrayElementAtIndex(index);
+                _arrayProperty.GetArrayElementAtIndex(index).objectReferenceValue = item;
+            }
+
+            if (_serializedObject.ApplyModifiedPropertiesWithoutUndo())
+                AssetDatabase.SaveAssetIfDirty(container);
         }
 
         public virtual void DrawInspectorGUI()
@@ -314,8 +351,18 @@ namespace SimpleU.Editors.DataContainer
 
         private void InsertItemReference(ItemAsset item, ItemAssetContainer destination)
         {
-            if (destination.Items.Contains(item))
+            if (!AssetDatabase.IsSubAsset(item))
+            {
+                Debug.LogWarning("Select an item subasset to move into this container.", item);
                 return;
+            }
+
+            if (destination.Items.Contains(item))
+            {
+                if (AssetDatabase.IsSubAsset(item) && AssetDatabase.GetAssetPath(item) != AssetDatabase.GetAssetPath(destination))
+                    EditorApplication.delayCall += () => MoveItemReference(item, destination, null);
+                return;
+            }
 
             var sources = AssetDatabase.FindAssets($"t:{nameof(ItemAssetContainer)}")
                 .Select(AssetDatabase.GUIDToAssetPath)
@@ -325,22 +372,47 @@ namespace SimpleU.Editors.DataContainer
 
             if (sources.Length <= 1)
             {
-                MoveItemReference(item, destination, sources.FirstOrDefault());
+                EditorApplication.delayCall += () => MoveItemReference(item, destination, sources.FirstOrDefault());
                 return;
             }
 
             var menu = new GenericMenu();
             foreach (var source in sources)
-                menu.AddItem(new GUIContent($"Move from {source.name}"), false, () => MoveItemReference(item, destination, source));
+                menu.AddItem(new GUIContent($"Move from {source.name}"), false,
+                    () => EditorApplication.delayCall += () => MoveItemReference(item, destination, source));
             menu.ShowAsContext();
         }
 
         private void MoveItemReference(ItemAsset item, ItemAssetContainer destination, ItemAssetContainer source)
         {
-            if (!item || !destination || destination.Items.Contains(item))
+            if (!item || !destination)
                 return;
 
-            // Keep the original asset file and local ID so serialized references keep resolving.
+            if (AssetDatabase.IsSubAsset(item) && AssetDatabase.GetAssetPath(item) != AssetDatabase.GetAssetPath(destination))
+            {
+                string destinationPath = AssetDatabase.GetAssetPath(destination);
+                string sourcePath = source ? AssetDatabase.GetAssetPath(source) : null;
+                int removedIndex = source ? source.Items.IndexOf(item) : -1;
+                try
+                {
+                    item = ItemSubAssetMover.Move(item, destination, source);
+                }
+                catch (Exception error)
+                {
+                    Debug.LogError($"Could not move {item.name}: {error.Message}", item);
+                    return;
+                }
+
+                destination = AssetDatabase.LoadAssetAtPath<ItemAssetContainer>(destinationPath);
+                SetItemName(item as T, destination.Items.IndexOf(item), GetItemNameFromFormattedName(item.name));
+                if (removedIndex >= 0)
+                    ReformatSourceItemNames(AssetDatabase.LoadAssetAtPath<ItemAssetContainer>(sourcePath), removedIndex);
+                return;
+            }
+
+            if (destination.Items.Contains(item))
+                return;
+
             Undo.RecordObject(destination, "Move item between containers");
             int destinationIndex = destination.Items.Count;
             destination.Items.Add(item);
@@ -355,24 +427,29 @@ namespace SimpleU.Editors.DataContainer
                 EditorUtility.SetDirty(source);
                 AssetDatabase.SaveAssetIfDirty(source);
 
-                var sourcePrefix = GetNamePrefix(source.name);
-                for (int index = sourceIndex; index < source.Items.Count; index++)
-                {
-                    var remainingItem = source.Items[index];
-                    if (!remainingItem)
-                        continue;
-
-                    string name = remainingItem.name;
-                    int separator = name.IndexOf('-');
-                    string updatedName = separator > 0 && int.TryParse(name[..separator], out _)
-                        ? $"{index}{name[separator..]}"
-                        : GetFormattedItemName(index, name, sourcePrefix);
-                    RenameAsset(remainingItem, updatedName);
-                }
+                ReformatSourceItemNames(source, sourceIndex);
             }
 
             SetItemName(item as T, destinationIndex, GetItemNameFromFormattedName(item.name));
             _serializedObject.Update();
+        }
+
+        private static void ReformatSourceItemNames(ItemAssetContainer source, int firstIndex)
+        {
+            var sourcePrefix = GetNamePrefix(source.name);
+            for (int index = firstIndex; index < source.Items.Count; index++)
+            {
+                var item = source.Items[index];
+                if (!item)
+                    continue;
+
+                string name = item.name;
+                int separator = name.IndexOf('-');
+                string updatedName = separator > 0 && int.TryParse(name[..separator], out _)
+                    ? $"{index}{name[separator..]}"
+                    : GetFormattedItemName(index, name, sourcePrefix);
+                RenameAsset(item, updatedName);
+            }
         }
 
         private static void CheckRemoveFromParent(T toRemoveItem)
@@ -404,9 +481,19 @@ namespace SimpleU.Editors.DataContainer
         {
             if (itemsProperty.serializedObject.targetObject is ItemAssetContainer container)
             {
+                var item = GetItemAtIndex(itemsProperty, index);
+                bool deleteOwnedItem = delete && item && AssetDatabase.IsSubAsset(item) &&
+                    AssetDatabase.GetAssetPath(item) == AssetDatabase.GetAssetPath(container);
+
                 itemsProperty.GetArrayElementAtIndex(index).objectReferenceValue = null;
                 itemsProperty.DeleteArrayElementAtIndex(index);
                 itemsProperty.serializedObject.ApplyModifiedProperties();
+                if (deleteOwnedItem)
+                {
+                    Undo.DestroyObjectImmediate(item);
+                    EditorUtility.SetDirty(container);
+                }
+
                 AssetDatabase.SaveAssetIfDirty(container);
                 return;
             }
