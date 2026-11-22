@@ -22,8 +22,11 @@ namespace SimpleU.Inventory
         private int _slotIndex, _rowIndex, _columnIndex;
         protected IQuantityItem _quantityItem;
         private int _capacity;
+        private bool _deferQuantityEvents;
+        protected bool AreQuantityEventsDeferred => _deferQuantityEvents;
 
         public Action<GridSlot> OnEmptinessChange { get; set; }
+        public event Action<GridSlot> OnItemChange;
         public Action<GridSlot> OnQuantityChange { get; set; }
 
         public GridSlot(IInventoryManager inventoryManager, int index, int rowIndex, int columnIndex,
@@ -71,14 +74,56 @@ namespace SimpleU.Inventory
         
         protected void InvokeQuantityEvents(bool wasEmpty)
         {
-            if (wasEmpty)
+            if (_deferQuantityEvents)
+                return;
+
+            if (wasEmpty || IsEmpty)
             {
                 OnEmptinessChange?.Invoke(this);
+                OnItemChange?.Invoke(this);
             }
-            else if (IsEmpty)
+            OnQuantityChange?.Invoke(this);
+        }
+
+        internal void SwapContents(GridSlot other)
+        {
+            // Move both payloads before inventory and UI listeners can observe either slot.
+            _deferQuantityEvents = true;
+            other._deferQuantityEvents = true;
+            try
             {
-                OnEmptinessChange?.Invoke(this);
+                var item = RemoveStackForSwap(other);
+                var otherItem = other.RemoveStackForSwap(this);
+                AddQuantity(other, otherItem);
+                other.AddQuantity(this, item);
             }
+            finally
+            {
+                _deferQuantityEvents = false;
+                other._deferQuantityEvents = false;
+            }
+
+            try
+            {
+                NotifySwappedItem();
+            }
+            finally
+            {
+                other.NotifySwappedItem();
+            }
+        }
+
+        private IQuantityItem RemoveStackForSwap(GridSlot other)
+        {
+            var extraData = QuantityItem.ExtraData;
+            RemoveQuantity(other, Quantity, out var item);
+            item.ExtraData ??= extraData;
+            return item;
+        }
+
+        protected virtual void NotifySwappedItem()
+        {
+            OnItemChange?.Invoke(this);
             OnQuantityChange?.Invoke(this);
         }
 
@@ -102,6 +147,12 @@ namespace SimpleU.Inventory
 
     public static class GridSlotService
     {
+        internal static int GetEmptySlotCapacity(IGridSlot slot, IItemAsset itemAsset)
+        {
+            int capacity = Math.Max(slot.Capacity, 0);
+            return itemAsset != null && !itemAsset.IsStackable ? Math.Min(capacity, 1) : capacity;
+        }
+
         public static void RemoveQuantity(IManagedGridSlot slot, IGridSlot sourceSlot, int quantity,
             out IQuantityItem removedItem)
         {
@@ -153,8 +204,7 @@ namespace SimpleU.Inventory
                 if (!isAdd)
                     return false;
 
-                int usedCapacity = itemAsset != null && !itemAsset.IsStackable ? Mathf.Min(leftQuantity, 1)
-                    : Mathf.Min(leftQuantity, slot.Capacity);
+                int usedCapacity = Mathf.Min(leftQuantity, GetEmptySlotCapacity(slot, itemAsset));
                 leftQuantity -= usedCapacity;
             }
             return leftQuantity != quantity;

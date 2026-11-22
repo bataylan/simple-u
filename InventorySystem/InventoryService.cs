@@ -214,6 +214,32 @@ namespace SimpleU.Inventory
             }
         }
 
+        public static bool CheckSwapItems(GridSlot sourceSlot, GridSlot targetSlot, bool apply)
+        {
+            if (sourceSlot == null || targetSlot == null || sourceSlot == targetSlot ||
+                sourceSlot.IsEmpty || targetSlot.IsEmpty || Equals(sourceSlot.ItemAsset, targetSlot.ItemAsset))
+                return false;
+
+            if (!CanReplaceStack(sourceSlot, targetSlot) || !CanReplaceStack(targetSlot, sourceSlot))
+                return false;
+
+            if (apply)
+                sourceSlot.SwapContents(targetSlot);
+
+            return true;
+        }
+
+        private static bool CanReplaceStack(IManagedGridSlot slot, IManagedGridSlot otherSlot)
+        {
+            var inventory = slot.ManagedInventoryManager;
+            return inventory != null &&
+                inventory.CanAddItem(otherSlot, slot, slot.ItemAsset, -slot.Quantity) &&
+                slot.CanApplyQuantity(otherSlot, slot.ItemAsset, -slot.Quantity, out int leftQuantity) &&
+                leftQuantity == 0 &&
+                inventory.CanAddItem(otherSlot, slot, otherSlot.ItemAsset, otherSlot.Quantity) &&
+                otherSlot.Quantity <= GridSlotService.GetEmptySlotCapacity(slot, otherSlot.ItemAsset);
+        }
+
         public static bool HasEnoughQuantity(IManagedInventoryManager inventory, IItemAsset itemAsset, int quantity)
         {
             return GetQuantity(inventory, itemAsset) >= quantity;
